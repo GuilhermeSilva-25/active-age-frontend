@@ -29,7 +29,7 @@ export function Home() {
             </div>
             <div className="col-md-6 text-center">
               <img
-                src="/public/hero-image.png"
+                src="/hero-image.png"
                 className="img-fluid rounded-circle shadow-lg"
                 alt="Pessoas felizes conversando em teleconsulta"
                 style={{

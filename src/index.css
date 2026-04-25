@@ -1,55 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap");
 
 :root {
-    --aa-green: #90c28d;
-    --aa-orange: #e86542;
-    --aa-brown: #5a3a2d;
-    --aa-bg: #f9f9f9;
+  --aa-green: #90c28d;
+  --aa-orange: #e86542;
+  --aa-brown: #5a3a2d;
+  --aa-bg: #f9f9f9;
 }
 
 body {
-    background-color: var(--aa-bg);
-    font-family: 'Lato', sans-serif;
-    color: var(--aa-brown);
-    margin: 0;
+  background-color: var(--aa-bg);
+  font-family: "Lato", sans-serif;
+  color: var(--aa-brown);
+  margin: 0;
 }
 
 .btn-primary {
-    background-color: var(--aa-orange) !important;
-    border-color: var(--aa-orange) !important;
-    font-weight: bold;
-    color: white !important;
+  background-color: var(--aa-orange) !important;
+  border-color: var(--aa-orange) !important;
+  font-weight: bold;
+  color: white !important;
 }
 .btn-primary:hover {
-    background-color: #d15431 !important;
-    border-color: #d15431 !important;
+  background-color: #d15431 !important;
+  border-color: #d15431 !important;
 }
 
 .btn-outline-secondary {
-    border-color: var(--aa-brown);
-    color: var(--aa-brown);
+  border-color: var(--aa-brown);
+  color: var(--aa-brown);
 }
 
 .hero-section {
-    background: linear-gradient(135deg, var(--aa-bg) 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--aa-bg) 0%, #ffffff 100%);
 }
 
 .cta-section {
-    background-color: var(--aa-green);
-    color: white;
+  background-color: var(--aa-green);
+  color: white;
 }
 
 footer {
-    background-color: #212529 !important;
+  background-color: #212529 !important;
 }
 
 footer a {
-    color: #e0e0e0 !important;
-    text-decoration: none;
-    transition: color 0.2s;
+  color: #e0e0e0 !important;
+  text-decoration: none;
+  transition: color 0.2s;
 }
 
 footer a:hover {
-    color: white !important;
-    text-decoration: none;
+  color: white !important;
+  text-decoration: none;
+}
+
+/* PAGINAS INSTITUCIONAIS */
+.content-section {
+  padding: 20px 0;
+  border-bottom: 1px dashed #e0e0e0;
+  margin-bottom: 20px;
+}
+.content-section:last-child {
+  border-bottom: none;
+}
+.content-section h2 {
+  color: var(--aa-brown);
+  font-weight: bold;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--aa-orange);
+  display: inline-block;
+}
+.content-section h3 {
+  color: var(--aa-green);
+  font-weight: bold;
+  margin-top: 25px;
+  margin-bottom: 10px;
+}
+.content-section p,
+.content-section ul {
+  line-height: 1.8;
+  font-size: 1.1rem;
+  color: #4a4a4a;
+}
+.content-section ul {
+  list-style-type: disc;
+  margin-left: 20px;
+  padding-left: 10px;
+}
+.content-section ul li {
+  margin-bottom: 8px;
 }

@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 
 export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const paginasInstitucionais = [
+    "/privacidade",
+    "/termos",
+    "/quem-somos",
+    "/servicos",
+  ];
+  const isInstitucional = paginasInstitucionais.includes(location.pathname);
 
   useEffect(() => {
     const token = localStorage.getItem("activeAgeToken");
@@ -37,7 +46,7 @@ export function Navbar() {
       <div className="container">
         <Link className="navbar-brand d-flex align-items-center" to="/">
           <img
-            src="/public/logo.png"
+            src="/logo.png"
             alt="Active Age Logo"
             height="110"
             className="me-2"
@@ -59,7 +68,13 @@ export function Navbar() {
           id="navbarNav"
         >
           <ul className="navbar-nav align-items-lg-center mt-3 mt-lg-0">
-            {isLoggedIn ? (
+            {isInstitucional ? (
+              <li className="nav-item">
+                <Link className="btn btn-outline-secondary" to="/">
+                  Voltar para Home
+                </Link>
+              </li>
+            ) : isLoggedIn ? (
               <>
                 <li className="nav-item d-flex align-items-center me-lg-4 mb-3 mb-lg-0 mt-3 mt-lg-0">
                   <span className="navbar-text fs-5">
