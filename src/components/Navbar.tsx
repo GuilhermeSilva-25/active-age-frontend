@@ -16,6 +16,9 @@ export function Navbar() {
   ];
   const isInstitucional = paginasInstitucionais.includes(location.pathname);
 
+  const isCadastro = location.pathname === "/cadastro";
+  const isLogin = location.pathname === "/login";
+
   useEffect(() => {
     const token = localStorage.getItem("activeAgeToken");
     const userJSON = localStorage.getItem("activeAgeUser");
@@ -103,22 +106,26 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <li className="nav-item me-lg-3 mb-2 mb-lg-0">
-                  <Link
-                    className="btn btn-outline-secondary btn-lg px-4 w-100"
-                    to="/login"
-                  >
-                    Fazer Login
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    className="btn btn-primary btn-lg px-4 w-100"
-                    to="/cadastro"
-                  >
-                    Cadastre-se
-                  </Link>
-                </li>
+                {!isLogin && (
+                  <li className="nav-item me-lg-3 mb-2 mb-lg-0">
+                    <Link
+                      className="btn btn-outline-secondary btn-lg px-4 w-100"
+                      to="/login"
+                    >
+                      Fazer Login
+                    </Link>
+                  </li>
+                )}
+                {!isCadastro && (
+                  <li className="nav-item">
+                    <Link
+                      className="btn btn-primary btn-lg px-4 w-100"
+                      to="/cadastro"
+                    >
+                      Cadastre-se
+                    </Link>
+                  </li>
+                )}
               </>
             )}
           </ul>
