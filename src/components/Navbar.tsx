@@ -22,12 +22,16 @@ export function Navbar() {
   useEffect(() => {
     const token = localStorage.getItem("activeAgeToken");
     const userJSON = localStorage.getItem("activeAgeUser");
+
     if (token && userJSON) {
       setIsLoggedIn(true);
       const user = JSON.parse(userJSON);
       setUserName(user.nome);
+    } else {
+      setIsLoggedIn(false);
+      setUserName("");
     }
-  }, []);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     Swal.fire({

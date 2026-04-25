@@ -150,6 +150,7 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
       <div className="col-lg-8">
         <div
           className="card shadow-sm border-0 h-100"
@@ -245,36 +246,16 @@ export function Dashboard() {
 
   return (
     <main className="container my-5 pb-5">
-      <div className="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom">
-        <div>
-          <h1 className="fw-bold mb-1" style={{ color: "var(--aa-brown)" }}>
-            Olá, {user.nome.split(" ")[0]}! 👋
-          </h1>
-          <p className="fs-5 text-muted mb-0">
-            {user.tipo === "PACIENTE" && "Como está sua saúde hoje?"}
-            {user.tipo === "MEDICO" &&
-              "Bem-vindo(a) ao seu consultório virtual."}
-            {user.tipo === "ADMIN" && "Visão geral da plataforma Active Age."}
-          </p>
-        </div>
-        <div className="d-none d-md-block">
-          <span
-            className={`badge px-3 py-2 fs-6 rounded-pill ${
-              user.tipo === "PACIENTE"
-                ? "bg-primary"
-                : user.tipo === "MEDICO"
-                  ? "bg-success"
-                  : "bg-dark"
-            }`}
-          >
-            Perfil:{" "}
-            {user.tipo === "PACIENTE"
-              ? "Paciente"
-              : user.tipo === "MEDICO"
-                ? "Médico"
-                : "Administrador"}
-          </span>
-        </div>
+      {/* Cabeçalho do Dashboard Limpo */}
+      <div className="mb-5 pb-3 border-bottom">
+        <h1 className="fw-bold mb-1" style={{ color: "var(--aa-brown)" }}>
+          Olá, {user.nome.split(" ")[0]}! 👋
+        </h1>
+        <p className="fs-5 text-muted mb-0">
+          {user.tipo === "PACIENTE" && "Como está sua saúde hoje?"}
+          {user.tipo === "MEDICO" && "Bem-vindo(a) ao seu consultório virtual."}
+          {user.tipo === "ADMIN" && "Visão geral da plataforma Active Age."}
+        </p>
       </div>
 
       {user.tipo === "PACIENTE" && renderPaciente()}
