@@ -5,7 +5,8 @@ import { Footer } from "./components/Footer";
 import { Home } from "./pages/Home";
 import { Privacidade } from "./pages/Privacidade";
 import { Termos } from "./pages/Termos";
-import { Servicos } from './pages/Servicos';
+import { Servicos } from "./pages/Servicos";
+import { QuemSomos } from "./pages/QuemSomos";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/termos" element={<Termos />} />
         <Route path="/servicos" element={<Servicos />} />
+        <Route path="/quem-somos" element={<QuemSomos />} />
       </Routes>
 
       <Footer />
