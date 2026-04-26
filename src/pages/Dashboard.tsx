@@ -7,6 +7,16 @@ interface Usuario {
   nome: string;
   email: string;
   tipo: "PACIENTE" | "MEDICO" | "ADMIN";
+  crm?: string;
+  statusValidacao?: "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REPROVADO";
+  mensagemValidacao?: string;
+}
+
+interface PedidoValidacao {
+  idMedico: string;
+  nome: string;
+  crm: string;
+  dataSolicitacao: string;
 }
 
 export function Dashboard() {
@@ -14,24 +24,42 @@ export function Dashboard() {
   const [user, setUser] = useState<Usuario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [pedidosAdmin, setPedidosAdmin] = useState<PedidoValidacao[]>([]);
+
   useEffect(() => {
     const token = localStorage.getItem("activeAgeToken");
     const userStr = localStorage.getItem("activeAgeUser");
 
     if (!token || !userStr) {
-      Swal.fire({
-        icon: "warning",
-        title: "Acesso Negado",
-        text: "Você precisa fazer login para acessar o painel.",
-        confirmButtonColor: "var(--aa-orange)",
-      }).then(() => {
-        navigate("/login");
-      });
+      navigate("/login");
       return;
     }
 
     const usuarioLogado: Usuario = JSON.parse(userStr);
+
+    if (usuarioLogado.tipo === "MEDICO" && !usuarioLogado.statusValidacao) {
+      usuarioLogado.statusValidacao = "PENDENTE";
+    }
+
     setUser(usuarioLogado);
+
+    if (usuarioLogado.tipo === "ADMIN") {
+      setPedidosAdmin([
+        {
+          idMedico: "123",
+          nome: "Dra. Ana Silva",
+          crm: "98765/SP",
+          dataSolicitacao: "25/04/2026",
+        },
+        {
+          idMedico: "456",
+          nome: "Dr. João Souza",
+          crm: "12345/RJ",
+          dataSolicitacao: "24/04/2026",
+        },
+      ]);
+    }
+
     setIsLoading(false);
   }, [navigate]);
 
@@ -41,16 +69,73 @@ export function Dashboard() {
         className="d-flex justify-content-center align-items-center"
         style={{ height: "60vh" }}
       >
-        <div
-          className="spinner-border text-primary"
-          style={{ width: "3rem", height: "3rem" }}
-          role="status"
-        >
+        <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Carregando...</span>
         </div>
       </div>
     );
   }
+
+  const solicitarValidacao = async () => {
+    Swal.fire({
+      icon: "success",
+      title: "Enviado!",
+      text: "Seus dados foram enviados para análise do Administrador.",
+      confirmButtonColor: "var(--aa-green)",
+    });
+    const updatedUser = { ...user, statusValidacao: "EM_ANALISE" as const };
+    setUser(updatedUser);
+    localStorage.setItem("activeAgeUser", JSON.stringify(updatedUser));
+  };
+
+  const aprovarMedico = (id: string, nome: string) => {
+    Swal.fire({
+      title: `Aprovar ${nome}?`,
+      text: "Este médico terá acesso total à plataforma.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "var(--aa-green)",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sim, aprovar!",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setPedidosAdmin(pedidosAdmin.filter((p) => p.idMedico !== id));
+        Swal.fire("Aprovado!", "O CRM foi validado com sucesso.", "success");
+      }
+    });
+  };
+
+  const reprovarMedico = (id: string, nome: string) => {
+    Swal.fire({
+      title: `Reprovar ${nome}?`,
+      input: "textarea",
+      inputLabel: "Motivo da reprovação (Feedback para o médico)",
+      inputPlaceholder:
+        "Ex: A foto do CRM está ilegível ou o CRM é inválido...",
+      inputAttributes: { "aria-label": "Motivo da reprovação" },
+      showCancelButton: true,
+      confirmButtonColor: "var(--aa-orange)",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Enviar Reprovação",
+      cancelButtonText: "Cancelar",
+      preConfirm: (feedback) => {
+        if (!feedback) {
+          Swal.showValidationMessage("O feedback é obrigatório para reprovar.");
+        }
+        return feedback;
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setPedidosAdmin(pedidosAdmin.filter((p) => p.idMedico !== id));
+        Swal.fire(
+          "Reprovado!",
+          `O médico foi notificado com o motivo: ${result.value}`,
+          "success",
+        );
+      }
+    });
+  };
 
   const renderPaciente = () => (
     <div className="row g-4 animation-fade-in">
@@ -74,14 +159,12 @@ export function Dashboard() {
                 </p>
               </div>
               <button className="btn btn-primary px-4 shadow-sm" disabled>
-                <i className="bi bi-camera-video me-2"></i>Entrar na Sala (Em
-                breve)
+                <i className="bi bi-camera-video me-2"></i>Entrar na Sala
               </button>
             </div>
           </div>
         </div>
       </div>
-
       <div className="col-lg-4">
         <Link to="#" className="text-decoration-none">
           <div
@@ -89,13 +172,13 @@ export function Dashboard() {
             style={{ borderRadius: "15px" }}
           >
             <div className="card-body text-center p-4">
-              <div className="mb-3">
-                <i
-                  className="bi bi-search display-4"
-                  style={{ color: "var(--aa-green)" }}
-                ></i>
-              </div>
-              <h4 style={{ color: "var(--aa-brown)" }}>Agendar Consulta</h4>
+              <i
+                className="bi bi-search display-4"
+                style={{ color: "var(--aa-green)" }}
+              ></i>
+              <h4 style={{ color: "var(--aa-brown)" }} className="mt-3">
+                Agendar Consulta
+              </h4>
               <p className="text-muted mb-0">
                 Encontre especialistas disponíveis.
               </p>
@@ -103,158 +186,233 @@ export function Dashboard() {
           </div>
         </Link>
       </div>
-
-      <div className="col-md-6">
-        <div
-          className="card shadow-sm border-0"
-          style={{ borderRadius: "15px" }}
-        >
-          <div className="card-body p-4">
-            <h5 style={{ color: "var(--aa-brown)" }}>
-              <i className="bi bi-clipboard2-pulse me-2"></i>Meu Histórico
-            </h5>
-            <p className="text-muted">
-              Você ainda não possui consultas finalizadas.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="col-md-6">
-        <div
-          className="card shadow-sm border-0"
-          style={{ borderRadius: "15px" }}
-        >
-          <div className="card-body p-4">
-            <h5 style={{ color: "var(--aa-brown)" }}>
-              <i className="bi bi-file-earmark-medical me-2"></i>Minhas Receitas
-            </h5>
-            <p className="text-muted">Nenhuma receita prescrita no momento.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
-  const renderMedico = () => (
-    <div className="row g-4 animation-fade-in">
-      <div className="col-12">
-        <div
-          className="alert alert-warning border-0 shadow-sm d-flex align-items-center"
-          role="alert"
-          style={{ borderRadius: "10px" }}
-        >
-          <i className="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-          <div>
-            <strong>Atenção:</strong> Seu perfil está em análise pela
-            administração (Validação de CRM). Algumas funções estão restritas.
+  const renderMedico = () => {
+    if (user.statusValidacao === "APROVADO") {
+      return (
+        <div className="row g-4 animation-fade-in">
+          <div className="col-lg-8">
+            <div
+              className="card shadow-sm border-0 h-100"
+              style={{ borderRadius: "15px" }}
+            >
+              <div className="card-body p-4">
+                <h4 style={{ color: "var(--aa-brown)" }} className="mb-4">
+                  <i className="bi bi-calendar-check me-2"></i>Consultas de Hoje
+                </h4>
+                <div className="text-center py-5 text-muted">
+                  <i className="bi bi-cup-hot display-4 mb-3 d-block text-secondary opacity-50"></i>
+                  <h5>Sua agenda está livre hoje!</h5>
+                  <p>
+                    Aproveite para atualizar seu perfil ou revisar prontuários.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-lg-4 d-flex flex-column gap-4">
+            <div
+              className="card shadow-sm border-0 service-feature bg-white p-3"
+              style={{
+                borderRadius: "15px",
+                height: "auto",
+                cursor: "pointer",
+              }}
+            >
+              <h5 style={{ color: "var(--aa-brown)" }} className="m-0">
+                <i className="bi bi-gear me-2"></i>Configurar Agenda
+              </h5>
+            </div>
           </div>
         </div>
-      </div>
+      );
+    }
 
-      <div className="col-lg-8">
-        <div
-          className="card shadow-sm border-0 h-100"
-          style={{ borderRadius: "15px" }}
-        >
-          <div className="card-body p-4">
-            <h4 style={{ color: "var(--aa-brown)" }} className="mb-4">
-              <i className="bi bi-calendar-check me-2"></i>Consultas de Hoje
-            </h4>
-            <div className="text-center py-5 text-muted">
-              <i className="bi bi-cup-hot display-4 mb-3 d-block text-secondary opacity-50"></i>
-              <h5>Sua agenda está livre hoje!</h5>
-              <p>Aproveite para atualizar seu perfil ou revisar prontuários.</p>
+    return (
+      <div className="row justify-content-center animation-fade-in">
+        <div className="col-lg-8">
+          <div
+            className="card shadow-sm border-0"
+            style={{
+              borderRadius: "15px",
+              borderTop: "6px solid var(--aa-orange)",
+            }}
+          >
+            <div className="card-body p-4 p-md-5 text-center">
+              {user.statusValidacao === "PENDENTE" && (
+                <>
+                  <i
+                    className="bi bi-shield-lock display-1 mb-3"
+                    style={{ color: "var(--aa-orange)" }}
+                  ></i>
+                  <h2
+                    className="fw-bold mb-3"
+                    style={{ color: "var(--aa-brown)" }}
+                  >
+                    Validação Obrigatória
+                  </h2>
+                  <p className="fs-5 text-muted mb-4">
+                    Para garantir a segurança dos nossos pacientes, precisamos
+                    validar sua identidade profissional. Confirme seus dados
+                    abaixo para enviar à moderação.
+                  </p>
+                  <div className="bg-light p-4 rounded text-start mb-4">
+                    <p className="mb-2">
+                      <strong>Nome Completo:</strong> {user.nome}
+                    </p>
+                    <p className="mb-0">
+                      <strong>CRM:</strong>{" "}
+                      <span className="badge bg-secondary fs-6">
+                        {user.crm || "Não informado"}
+                      </span>
+                    </p>
+                  </div>
+                  <button
+                    className="btn btn-primary btn-lg px-5"
+                    onClick={solicitarValidacao}
+                  >
+                    <i className="bi bi-send-check me-2"></i> Enviar para
+                    Análise
+                  </button>
+                </>
+              )}
+
+              {user.statusValidacao === "EM_ANALISE" && (
+                <>
+                  <i className="bi bi-hourglass-split display-1 mb-3 text-warning"></i>
+                  <h2
+                    className="fw-bold mb-3"
+                    style={{ color: "var(--aa-brown)" }}
+                  >
+                    Documentos em Análise
+                  </h2>
+                  <p className="fs-5 text-muted">
+                    Sua solicitação foi recebida e está sendo analisada pela
+                    nossa equipe administrativa. O prazo médio é de até 24 horas
+                    úteis.
+                  </p>
+                  <div className="progress mt-4" style={{ height: "10px" }}>
+                    <div
+                      className="progress-bar progress-bar-striped progress-bar-animated bg-warning w-100"
+                      role="progressbar"
+                    ></div>
+                  </div>
+                </>
+              )}
+
+              {user.statusValidacao === "REPROVADO" && (
+                <>
+                  <i className="bi bi-x-octagon display-1 mb-3 text-danger"></i>
+                  <h2 className="fw-bold mb-3 text-danger">
+                    Validação Recusada
+                  </h2>
+                  <p className="fs-5 text-muted mb-2">
+                    Infelizmente não pudemos validar seu cadastro pelo seguinte
+                    motivo:
+                  </p>
+                  <div className="alert alert-danger text-start p-3 mb-4">
+                    <strong>Feedback do Admin:</strong> "
+                    {user.mensagemValidacao || "CRM inválido ou inativo."}"
+                  </div>
+                  <p className="text-muted mb-4">
+                    Por favor, atualize seus dados no menu Perfil e tente
+                    solicitar novamente.
+                  </p>
+                  <button
+                    className="btn btn-outline-danger btn-lg px-5"
+                    onClick={() => navigate("/perfil")}
+                  >
+                    <i className="bi bi-pencil-square me-2"></i> Editar Meus
+                    Dados
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
-
-      <div className="col-lg-4 d-flex flex-column gap-4">
-        <Link to="#" className="text-decoration-none">
-          <div
-            className="card shadow-sm border-0 service-feature bg-white p-3"
-            style={{ borderRadius: "15px", height: "auto" }}
-          >
-            <h5 style={{ color: "var(--aa-brown)" }} className="m-0">
-              <i className="bi bi-gear me-2"></i>Configurar Agenda
-            </h5>
-          </div>
-        </Link>
-        <Link to="#" className="text-decoration-none">
-          <div
-            className="card shadow-sm border-0 service-feature bg-white p-3"
-            style={{ borderRadius: "15px", height: "auto" }}
-          >
-            <h5 style={{ color: "var(--aa-brown)" }} className="m-0">
-              <i className="bi bi-person-lines-fill me-2"></i>Meus Pacientes
-            </h5>
-          </div>
-        </Link>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderAdmin = () => (
     <div className="row g-4 animation-fade-in">
-      <div className="col-md-4">
-        <div
-          className="card shadow-sm border-0 text-center p-4 h-100"
-          style={{
-            borderRadius: "15px",
-            borderBottom: "5px solid var(--aa-orange)",
-          }}
-        >
-          <i
-            className="bi bi-people-fill display-4 mb-2"
-            style={{ color: "var(--aa-brown)" }}
-          ></i>
-          <h2 className="fw-bold">124</h2>
-          <p className="text-muted mb-0">Pacientes Ativos</p>
-        </div>
-      </div>
-      <div className="col-md-4">
-        <div
-          className="card shadow-sm border-0 text-center p-4 h-100"
-          style={{
-            borderRadius: "15px",
-            borderBottom: "5px solid var(--aa-green)",
-          }}
-        >
-          <i
-            className="bi bi-bandaid display-4 mb-2"
-            style={{ color: "var(--aa-brown)" }}
-          ></i>
-          <h2 className="fw-bold">18</h2>
-          <p className="text-muted mb-0">Médicos Aprovados</p>
-        </div>
-      </div>
-      <div className="col-md-4">
-        <div
-          className="card shadow-sm border-0 text-center p-4 h-100 bg-warning bg-opacity-10"
-          style={{ borderRadius: "15px", borderBottom: "5px solid #ffc107" }}
-        >
-          <i className="bi bi-person-vcard display-4 mb-2 text-warning"></i>
-          <h2 className="fw-bold">3</h2>
-          <p className="text-muted mb-0">Validações de CRM Pendentes</p>
-          <button className="btn btn-warning btn-sm mt-2 fw-bold text-dark">
-            Revisar Agora
-          </button>
-        </div>
+      <div className="col-12">
+        <h3 className="fw-bold mb-3" style={{ color: "var(--aa-brown)" }}>
+          Validações Pendentes
+        </h3>
+
+        {pedidosAdmin.length === 0 ? (
+          <div className="alert alert-success border-0 shadow-sm">
+            <i className="bi bi-check-circle-fill me-2"></i>Tudo limpo! Não há
+            médicos aguardando validação.
+          </div>
+        ) : (
+          <div className="row g-3">
+            {pedidosAdmin.map((pedido) => (
+              <div key={pedido.idMedico} className="col-md-6">
+                <div
+                  className="card shadow-sm border-0 h-100"
+                  style={{ borderRadius: "10px" }}
+                >
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <div>
+                        <h5
+                          className="fw-bold mb-1"
+                          style={{ color: "var(--aa-brown)" }}
+                        >
+                          {pedido.nome}
+                        </h5>
+                        <span className="badge bg-secondary fs-6">
+                          <i className="bi bi-card-heading me-1"></i>CRM{" "}
+                          {pedido.crm}
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        {pedido.dataSolicitacao}
+                      </small>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <button
+                        className="btn btn-success w-50"
+                        onClick={() =>
+                          aprovarMedico(pedido.idMedico, pedido.nome)
+                        }
+                      >
+                        <i className="bi bi-check-lg me-1"></i> Aprovar
+                      </button>
+                      <button
+                        className="btn btn-outline-danger w-50"
+                        onClick={() =>
+                          reprovarMedico(pedido.idMedico, pedido.nome)
+                        }
+                      >
+                        <i className="bi bi-x-lg me-1"></i> Reprovar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 
   return (
     <main className="container my-5 pb-5">
-      {/* Cabeçalho do Dashboard Limpo */}
       <div className="mb-5 pb-3 border-bottom">
         <h1 className="fw-bold mb-1" style={{ color: "var(--aa-brown)" }}>
           Olá, {user.nome.split(" ")[0]}! 👋
         </h1>
         <p className="fs-5 text-muted mb-0">
           {user.tipo === "PACIENTE" && "Como está sua saúde hoje?"}
-          {user.tipo === "MEDICO" && "Bem-vindo(a) ao seu consultório virtual."}
-          {user.tipo === "ADMIN" && "Visão geral da plataforma Active Age."}
+          {user.tipo === "MEDICO" &&
+            "Área restrita para profissionais da saúde."}
+          {user.tipo === "ADMIN" && "Painel Administrativo Active Age."}
         </p>
       </div>
 
@@ -263,9 +421,7 @@ export function Dashboard() {
       {user.tipo === "ADMIN" && renderAdmin()}
 
       <style>{`
-        .animation-fade-in {
-          animation: fadeIn 0.4s ease-in-out;
-        }
+        .animation-fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
