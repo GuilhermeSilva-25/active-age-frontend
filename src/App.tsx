@@ -10,6 +10,7 @@ import { QuemSomos } from "./pages/QuemSomos";
 import { Cadastro } from "./pages/Cadastro";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
+import { EsqueceuSenha } from "./pages/EsqueceuSenha";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
       </Routes>
 
       <Footer />
