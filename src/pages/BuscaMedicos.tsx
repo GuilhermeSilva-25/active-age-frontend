@@ -25,6 +25,9 @@ interface Medico {
 export function BuscaMedicos() {
   const navigate = useNavigate();
   const [medicos, setMedicos] = useState<Medico[]>([]);
+  const [disponibilidade, setDisponibilidade] = useState<
+    Record<string, boolean>
+  >({});
   const [buscaNome, setBuscaNome] = useState("");
   const [filtroEspecialidade, setFiltroEspecialidade] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -56,14 +59,48 @@ export function BuscaMedicos() {
         "http://localhost:8080/api/usuarios/medicos",
       );
       if (response.ok) {
-        const data = await response.json();
+        const data: Medico[] = await response.json();
         setMedicos(data);
+        verificarDisponibilidades(data);
       }
     } catch (error) {
       console.error(error);
-    } finally {
       setIsLoading(false);
     }
+  };
+
+  const verificarDisponibilidades = async (listaMedicos: Medico[]) => {
+    const disp: Record<string, boolean> = {};
+
+    await Promise.all(
+      listaMedicos.map(async (medico) => {
+        try {
+          const res = await fetch(
+            `http://localhost:8080/api/agendamentos/disponiveis/${medico.id}`,
+          );
+          if (res.ok) {
+            const vagas = await res.json();
+            disp[medico.id] = vagas.length > 0;
+          } else {
+            disp[medico.id] = false;
+          }
+        } catch (e) {
+          disp[medico.id] = false;
+        }
+      }),
+    );
+
+    setDisponibilidade(disp);
+    setIsLoading(false);
+  };
+
+  const demonstrarInteresse = (nomeMedico: string) => {
+    Swal.fire({
+      title: "Lista de Espera",
+      text: `Notificaremos ${nomeMedico} do seu interesse. Avisaremos por e-mail quando novos horários surgirem!`,
+      icon: "success",
+      confirmButtonColor: "var(--aa-orange)",
+    });
   };
 
   const medicosFiltrados = medicos.filter((medico) => {
@@ -130,7 +167,8 @@ export function BuscaMedicos() {
 
       {isLoading ? (
         <div className="text-center py-5">
-          <div className="spinner-border text-primary"></div>
+          <div className="spinner-border text-primary mb-3"></div>
+          <p className="text-muted">Verificando agendas disponíveis...</p>
         </div>
       ) : medicosFiltrados.length === 0 ? (
         <div className="text-center py-5 text-muted">
@@ -140,6 +178,8 @@ export function BuscaMedicos() {
         <div className="row g-4">
           {medicosFiltrados.map((medico) => {
             const cores = getCoresAvatar(medico.nome);
+            const temVaga = disponibilidade[medico.id];
+
             return (
               <div className="col-md-6 col-lg-4" key={medico.id}>
                 <div
@@ -175,12 +215,23 @@ export function BuscaMedicos() {
                     </span>
 
                     <div className="mt-auto">
-                      <Link
-                        to={`/agendar/${medico.id}`}
-                        className="btn btn-primary w-100 py-2 fw-bold shadow-sm"
-                      >
-                        <i className="bi bi-calendar-plus me-2"></i> Ver Agenda
-                      </Link>
+                      {temVaga ? (
+                        <Link
+                          to={`/agendar/${medico.id}`}
+                          className="btn btn-primary w-100 py-2 fw-bold shadow-sm"
+                        >
+                          <i className="bi bi-calendar-check me-2"></i> Ver
+                          Agenda
+                        </Link>
+                      ) : (
+                        <button
+                          className="btn btn-warning w-100 py-2 fw-bold shadow-sm text-dark"
+                          onClick={() => demonstrarInteresse(medico.nome)}
+                        >
+                          <i className="bi bi-bell-fill me-2"></i> Fila de
+                          Espera
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
