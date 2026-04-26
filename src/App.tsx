@@ -11,6 +11,7 @@ import { Cadastro } from "./pages/Cadastro";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { EsqueceuSenha } from "./pages/EsqueceuSenha";
+import { Perfil } from "./pages/Perfil";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
+        <Route path="/perfil" element={<Perfil />} />
       </Routes>
 
       <Footer />
