@@ -39,6 +39,11 @@ export function Perfil() {
   const [especialidades, setEspecialidades] = useState<string[]>([]);
   const [email, setEmail] = useState("");
 
+  const isCrmBloqueado =
+    user?.tipo === "MEDICO" &&
+    (user.statusValidacao === "EM_ANALISE" ||
+      user.statusValidacao === "APROVADO");
+
   useEffect(() => {
     const token = localStorage.getItem("activeAgeToken");
     const userStr = localStorage.getItem("activeAgeUser");
@@ -112,10 +117,11 @@ export function Perfil() {
     }
 
     const telefoneLimpo = telefone.replace(/\D/g, "");
+
     const payload = {
       nome,
       telefone: telefoneLimpo,
-      crm: user?.tipo === "MEDICO" ? crm : undefined,
+      crm: user?.tipo === "MEDICO" && !isCrmBloqueado ? crm : undefined,
       especializacao: especialidades.join(", "),
     };
 
@@ -163,10 +169,6 @@ export function Perfil() {
       : user.tipo === "MEDICO"
         ? "e86542"
         : "5a3a2d";
-  const isCrmBloqueado =
-    user.tipo === "MEDICO" &&
-    (user.statusValidacao === "EM_ANALISE" ||
-      user.statusValidacao === "APROVADO");
 
   return (
     <main className="container my-5 pb-5">
