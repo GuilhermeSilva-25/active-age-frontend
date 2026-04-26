@@ -13,6 +13,8 @@ import { Dashboard } from "./pages/Dashboard";
 import { EsqueceuSenha } from "./pages/EsqueceuSenha";
 import { Perfil } from "./pages/Perfil";
 import { BuscaMedicos } from "./pages/BuscaMedicos";
+import { AgendaMedico } from "./pages/AgendaMedico";
+import { AgendarConsulta } from "./pages/AgendarConsulta";
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
         <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/busca" element={<BuscaMedicos />} />
+        <Route path="/agenda-medico" element={<AgendaMedico />} />
+        <Route path="/agendar/:medicoId" element={<AgendarConsulta />} />
       </Routes>
 
       <Footer />

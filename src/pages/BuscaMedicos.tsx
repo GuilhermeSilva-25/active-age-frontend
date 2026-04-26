@@ -175,12 +175,12 @@ export function BuscaMedicos() {
                     </span>
 
                     <div className="mt-auto">
-                      <button
+                      <Link
+                        to={`/agendar/${medico.id}`}
                         className="btn btn-primary w-100 py-2 fw-bold shadow-sm"
-                        onClick={() => Swal.fire("Agenda", "Em breve!", "info")}
                       >
                         <i className="bi bi-calendar-plus me-2"></i> Ver Agenda
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>
