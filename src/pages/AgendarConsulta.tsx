@@ -77,11 +77,12 @@ export function AgendarConsulta() {
               "success",
             ).then(() => navigate("/dashboard"));
           } else {
-            Swal.fire(
-              "Ops!",
-              "Este horário não está mais disponível.",
-              "error",
-            );
+            const errorData = await res.json().catch(() => null);
+            const mensagemErro =
+              errorData?.message ||
+              "Você já tem uma consulta marcada nesse hórario!";
+
+            Swal.fire("Não foi possível agendar", mensagemErro, "error");
             carregarHorariosLivres();
           }
         } catch (error) {

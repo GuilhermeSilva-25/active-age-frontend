@@ -333,7 +333,7 @@ export function Dashboard() {
                     </div>
                     <div>
                       <button
-                        className="btn btn-outline-danger px-4 shadow-sm fw-bold"
+                        className="btn btn-outline-danger px-4 shadow-sm fw-bold w-100"
                         onClick={() => handleCancelar(a.id)}
                       >
                         <i className="bi bi-x-circle me-2"></i>Cancelar
@@ -388,11 +388,13 @@ export function Dashboard() {
             >
               <div className="card-body p-4">
                 <h4 style={{ color: "var(--aa-brown)" }} className="mb-4">
-                  <i className="bi bi-calendar-check me-2"></i>Agenda do Dia
+                  <i className="bi bi-calendar-check me-2"></i>Meus Próximos
+                  Atendimentos
                 </h4>
+
                 {agendamentos.filter((a) => a.status === "AGENDADO").length >
                 0 ? (
-                  <div className="list-group list-group-flush gap-2">
+                  <div className="d-flex flex-column gap-3">
                     {agendamentos
                       .filter((a) => a.status === "AGENDADO")
                       .sort(
@@ -403,36 +405,46 @@ export function Dashboard() {
                       .map((a) => (
                         <div
                           key={a.id}
-                          className="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center border rounded p-3 shadow-sm bg-white"
+                          className="border rounded p-4 shadow-sm bg-white"
                         >
-                          <div
-                            className="mb-3 mb-md-0 ps-3"
-                            style={{ borderLeft: "4px solid var(--aa-orange)" }}
-                          >
-                            <span className="fw-bold fs-5 text-dark d-block">
-                              {formatarDataHora(a.dataHora).dia} às{" "}
-                              {formatarDataHora(a.dataHora).hora}
-                            </span>
-                            {/* CORREÇÃO PONTO 3: Agora exibe o nome real do paciente! */}
-                            <span className="text-muted fw-semibold small">
-                              <i className="bi bi-person-fill me-1"></i>{" "}
-                              {a.pacienteNome || "Paciente Identificado"}
-                            </span>
-                          </div>
-                          <div className="d-flex gap-2 w-100 w-md-auto justify-content-end">
-                            <button
-                              className="btn btn-outline-danger px-3 shadow-sm fw-bold"
-                              onClick={() => handleCancelar(a.id)}
-                            >
-                              Cancelar
-                            </button>
-                            <a
-                              href={a.linkTeleconsulta}
-                              target="_blank"
-                              className="btn btn-primary px-4 shadow-sm fw-bold"
-                            >
-                              <i className="bi bi-camera-video me-2"></i>Iniciar
-                            </a>
+                          <div className="row align-items-center">
+                            <div className="col-md-6 mb-3 mb-md-0">
+                              <div
+                                className="ps-3"
+                                style={{
+                                  borderLeft: "4px solid var(--aa-orange)",
+                                }}
+                              >
+                                <h5 className="fw-bold text-dark mb-1">
+                                  <i className="bi bi-calendar-event me-2 text-muted"></i>
+                                  {formatarDataHora(a.dataHora).dia} às{" "}
+                                  {formatarDataHora(a.dataHora).hora}
+                                </h5>
+                                <span className="text-muted fw-semibold">
+                                  <i className="bi bi-person-fill me-2 text-primary"></i>
+                                  {a.pacienteNome || "Paciente Identificado"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="col-md-6">
+                              <div className="d-grid d-sm-flex justify-content-md-end gap-2">
+                                <button
+                                  className="btn btn-outline-danger px-4 shadow-sm fw-bold"
+                                  onClick={() => handleCancelar(a.id)}
+                                >
+                                  Cancelar
+                                </button>
+                                <a
+                                  href={a.linkTeleconsulta}
+                                  target="_blank"
+                                  className="btn btn-primary px-4 shadow-sm fw-bold"
+                                >
+                                  <i className="bi bi-camera-video me-2"></i>
+                                  Iniciar
+                                </a>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -491,7 +503,6 @@ export function Dashboard() {
                     Confira os dados que serão enviados para a equipe de
                     moderação avaliar e validar o seu registro médico (CRM).
                   </p>
-
                   <div
                     className="card bg-light border-0 shadow-sm text-start mx-auto mb-5"
                     style={{ maxWidth: "400px", borderRadius: "15px" }}
@@ -515,7 +526,6 @@ export function Dashboard() {
                       </p>
                     </div>
                   </div>
-
                   <button
                     className="btn btn-primary btn-lg px-5 shadow-sm"
                     onClick={solicitarValidacao}
