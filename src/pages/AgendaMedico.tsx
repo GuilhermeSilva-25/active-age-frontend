@@ -42,9 +42,16 @@ export function AgendaMedico() {
 
   const carregarAgenda = async (medicoId: string) => {
     try {
-      setIsLoading(false);
+      const response = await fetch(
+        `http://localhost:8080/api/agendamentos/medico/${medicoId}/todos`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setHorarios(data);
+      }
     } catch (error) {
       console.error(error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -56,7 +63,7 @@ export function AgendaMedico() {
       return;
     }
 
-    const dataHoraIso = `${dataNova}T${horaNova}:00`; // Formata para o Java (LocalDateTime)
+    const dataHoraIso = `${dataNova}T${horaNova}:00`;
 
     try {
       const response = await fetch(
@@ -74,17 +81,9 @@ export function AgendaMedico() {
           "Horário disponibilizado para os pacientes!",
           "success",
         );
-        setHorarios([
-          ...horarios,
-          {
-            id: Date.now().toString(),
-            dataHora: dataHoraIso,
-            status: "DISPONIVEL",
-            pacienteId: null,
-          },
-        ]);
         setDataNova("");
         setHoraNova("");
+        carregarAgenda(user!.id);
       } else {
         Swal.fire("Erro", "Não foi possível salvar o horário.", "error");
       }
@@ -102,6 +101,7 @@ export function AgendaMedico() {
       confirmButtonColor: "#d33",
       cancelButtonColor: "var(--aa-brown)",
       confirmButtonText: "Sim, cancelar",
+      cancelButtonText: "Voltar",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
@@ -131,6 +131,19 @@ export function AgendaMedico() {
       </div>
     );
 
+  const agendaAgrupada = horarios.reduce((acc: any, item) => {
+    const dataKey = new Date(item.dataHora).toLocaleDateString("pt-BR");
+    if (!acc[dataKey]) acc[dataKey] = [];
+    acc[dataKey].push(item);
+    return acc;
+  }, {});
+
+  const datasOrdenadas = Object.keys(agendaAgrupada).sort((a, b) => {
+    const dateA = a.split("/").reverse().join("-");
+    const dateB = b.split("/").reverse().join("-");
+    return new Date(dateA).getTime() - new Date(dateB).getTime();
+  });
+
   return (
     <main className="container my-5 pb-5">
       <header className="mb-5 pb-3 border-bottom">
@@ -145,7 +158,7 @@ export function AgendaMedico() {
         </p>
       </header>
 
-      <div className="row">
+      <div className="row g-4">
         <div className="col-lg-4 mb-4">
           <div
             className="card shadow-sm border-0"
@@ -198,7 +211,7 @@ export function AgendaMedico() {
                 Disponíveis
               </h5>
 
-              {horarios.length === 0 ? (
+              {datasOrdenadas.length === 0 ? (
                 <div className="alert alert-light border text-center py-4">
                   <i className="bi bi-inbox fs-1 text-muted opacity-50 mb-2"></i>
                   <p className="mb-0 text-muted">
@@ -206,51 +219,45 @@ export function AgendaMedico() {
                   </p>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="table align-middle">
-                    <tbody>
-                      {horarios.map((h) => (
-                        <tr key={h.id}>
-                          <td>
-                            <div className="d-flex align-items-center">
-                              <div
-                                className="bg-light rounded p-2 text-center me-3"
-                                style={{
-                                  minWidth: "70px",
-                                  borderLeft: "4px solid var(--aa-orange)",
-                                }}
-                              >
-                                <span className="d-block fw-bold">
-                                  {new Date(h.dataHora).toLocaleDateString(
-                                    "pt-BR",
-                                    { day: "2-digit", month: "short" },
-                                  )}
-                                </span>
-                              </div>
-                              <div>
-                                <h6 className="mb-0 fw-bold">
-                                  {new Date(h.dataHora).toLocaleTimeString(
-                                    "pt-BR",
-                                    { hour: "2-digit", minute: "2-digit" },
-                                  )}
-                                </h6>
-                                <small className="text-muted">{h.status}</small>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="text-end">
+                datasOrdenadas.map((dataKey) => (
+                  <div key={dataKey} className="mb-4">
+                    <h6 className="bg-light p-2 rounded fw-bold text-muted mb-3 d-flex align-items-center">
+                      <i className="bi bi-calendar-event me-2"></i> {dataKey}
+                    </h6>
+                    <div className="d-flex flex-wrap gap-2">
+                      {agendaAgrupada[dataKey]
+                        .sort(
+                          (a: any, b: any) =>
+                            new Date(a.dataHora).getTime() -
+                            new Date(b.dataHora).getTime(),
+                        )
+                        .map((h: any) => (
+                          <div
+                            key={h.id}
+                            className={`p-3 border shadow-sm d-flex flex-column align-items-center justify-content-center position-relative ${h.status === "AGENDADO" ? "bg-primary text-white border-primary" : "bg-white text-dark"}`}
+                            style={{ borderRadius: "12px", minWidth: "110px" }}
+                          >
+                            <span className="fw-bold fs-5">
+                              {new Date(h.dataHora).toLocaleTimeString(
+                                "pt-BR",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </span>
+                            <span className="small opacity-75">
+                              {h.status === "AGENDADO" ? "Ocupado" : "Livre"}
+                            </span>
                             <button
-                              className="btn btn-outline-danger btn-sm"
                               onClick={() => cancelarHorario(h.id)}
+                              className="btn btn-sm text-danger position-absolute top-0 end-0 p-1"
+                              title="Cancelar"
                             >
-                              <i className="bi bi-trash"></i> Cancelar
+                              <i className="bi bi-x-circle-fill"></i>
                             </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>

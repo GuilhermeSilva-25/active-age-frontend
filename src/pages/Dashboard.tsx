@@ -105,13 +105,25 @@ export function Dashboard() {
       </div>
     );
 
-  const proxima = agendamentos.find((a) => a.status === "AGENDADO");
+  const agendamentosFuturos = agendamentos
+    .filter(
+      (a) => a.status === "AGENDADO" && new Date(a.dataHora) >= new Date(),
+    )
+    .sort(
+      (a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime(),
+    );
+
+  const proxima =
+    agendamentosFuturos.length > 0 ? agendamentosFuturos[0] : null;
+  const outrasConsultas = agendamentosFuturos.filter(
+    (a) => a.id !== proxima?.id,
+  );
 
   const renderPaciente = () => (
     <div className="row g-4 animation-fade-in">
       <div className="col-lg-8">
         <div
-          className="card shadow-sm border-0 h-100"
+          className="card shadow-sm border-0 mb-4"
           style={{
             borderRadius: "15px",
             borderLeft: "5px solid var(--aa-orange)",
@@ -124,7 +136,9 @@ export function Dashboard() {
             {proxima ? (
               <div className="mt-3 p-3 bg-light rounded d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
-                  <h5 className="mb-1 fw-bold">Teleconsulta Agendada</h5>
+                  <h5 className="mb-1 fw-bold">
+                    {proxima.medicoNome || "Teleconsulta Agendada"}
+                  </h5>
                   <p className="mb-0 text-muted">
                     <i className="bi bi-calendar3 me-2"></i>
                     {formatarDataHora(proxima.dataHora).dia} às{" "}
@@ -148,8 +162,48 @@ export function Dashboard() {
                 </div>
               </div>
             ) : (
-              <p className="mt-3 text-muted">
-                Você não tem consultas agendadas para os próximos dias.
+              <div className="text-center py-4">
+                <i className="bi bi-calendar2-x fs-1 text-muted opacity-50 mb-2 d-block"></i>
+                <p className="text-muted mb-0">
+                  Você não tem consultas agendadas para os próximos dias.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className="card shadow-sm border-0"
+          style={{ borderRadius: "15px" }}
+        >
+          <div className="card-body p-4">
+            <h5 style={{ color: "var(--aa-brown)" }} className="mb-3">
+              <i className="bi bi-list-ul me-2"></i>Minha Agenda
+            </h5>
+            {outrasConsultas.length > 0 ? (
+              <div className="list-group list-group-flush">
+                {outrasConsultas.map((a) => (
+                  <div
+                    key={a.id}
+                    className="list-group-item d-flex justify-content-between align-items-center px-0 border-light"
+                  >
+                    <span>
+                      <strong>{a.medicoNome}</strong> -{" "}
+                      {formatarDataHora(a.dataHora).dia} às{" "}
+                      {formatarDataHora(a.dataHora).hora}
+                    </span>
+                    <button
+                      className="btn btn-link text-danger p-0 border-0"
+                      onClick={() => handleCancelar(a.id)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted small mb-0">
+                Sem outros compromissos na agenda.
               </p>
             )}
           </div>
@@ -199,9 +253,10 @@ export function Dashboard() {
                     >
                       <div>
                         <span className="fw-bold">
+                          {formatarDataHora(a.dataHora).dia} -{" "}
                           {formatarDataHora(a.dataHora).hora}
                         </span>{" "}
-                        - Paciente Identificado
+                        - Consulta
                       </div>
                       <div className="d-flex gap-2">
                         <button
@@ -223,6 +278,7 @@ export function Dashboard() {
               </div>
             ) : (
               <div className="text-center py-4 text-muted">
+                <i className="bi bi-inbox fs-1 opacity-50 mb-2 d-block"></i>
                 Agenda livre no momento.
               </div>
             )}
@@ -246,7 +302,7 @@ export function Dashboard() {
 
   return (
     <main className="container my-5 pb-5">
-      <div className="mb-5 pb-3 border-bottom d-flex justify-content-between align-items-center">
+      <div className="mb-5 pb-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
           <h1 className="fw-bold mb-1" style={{ color: "var(--aa-brown)" }}>
             Olá, {getPrimeiroNome(user.nome)}! 👋
@@ -254,7 +310,7 @@ export function Dashboard() {
           <p className="fs-5 text-muted mb-0">Bem-vindo ao Active Age.</p>
         </div>
         <Link to="/perfil" className="btn btn-outline-secondary px-4">
-          <i className="bi bi-person-lines-fill me-2"></i>Perfil
+          <i className="bi bi-person-lines-fill me-2"></i>Editar Perfil
         </Link>
       </div>
       {user.tipo === "PACIENTE" ? renderPaciente() : renderMedico()}
