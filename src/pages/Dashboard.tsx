@@ -196,7 +196,7 @@ export function Dashboard() {
         </div>
       </div>
       <div className="col-lg-4">
-        <Link to="#" className="text-decoration-none">
+        <Link to="/busca" className="text-decoration-none">
           <div
             className="card shadow-sm border-0 h-100 service-feature bg-white"
             style={{ borderRadius: "15px" }}

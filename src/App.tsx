@@ -12,6 +12,7 @@ import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { EsqueceuSenha } from "./pages/EsqueceuSenha";
 import { Perfil } from "./pages/Perfil";
+import { BuscaMedicos } from "./pages/BuscaMedicos";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
         <Route path="/perfil" element={<Perfil />} />
+        <Route path="/busca" element={<BuscaMedicos />} />
       </Routes>
 
       <Footer />
