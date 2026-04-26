@@ -2,6 +2,19 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
+const LISTA_ESPECIALIDADES = [
+  "Cardiologia",
+  "Neurologia",
+  "Psiquiatria",
+  "Ortopedia",
+  "Nutrologia",
+  "Oncologia",
+  "Reumatologia",
+  "Endocrinologia",
+  "Dermatologia",
+  "Pneumologia",
+];
+
 interface Usuario {
   id: string;
   nome: string;
@@ -9,7 +22,7 @@ interface Usuario {
   telefone?: string;
   tipo: "PACIENTE" | "MEDICO" | "ADMIN";
   crm?: string;
-  cpf?: string;
+  especializacao?: string;
   statusValidacao?: "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REPROVADO";
   mensagemValidacao?: string;
 }
@@ -23,13 +36,12 @@ export function Perfil() {
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [crm, setCrm] = useState("");
-
+  const [especialidades, setEspecialidades] = useState<string[]>([]);
   const [email, setEmail] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("activeAgeToken");
     const userStr = localStorage.getItem("activeAgeUser");
-
     if (!token || !userStr) {
       navigate("/login");
       return;
@@ -37,12 +49,19 @@ export function Perfil() {
 
     const usuarioLogado: Usuario = JSON.parse(userStr);
     setUser(usuarioLogado);
-
     setNome(usuarioLogado.nome || "");
     setEmail(usuarioLogado.email || "");
     setTelefone(usuarioLogado.telefone || "");
     setCrm(usuarioLogado.crm || "");
 
+    if (usuarioLogado.especializacao) {
+      const splitted = usuarioLogado.especializacao
+        .split(",")
+        .map((s) => s.trim());
+      setEspecialidades(
+        splitted.filter((s) => s.toLowerCase() !== "geriatria" && s !== ""),
+      );
+    }
     setIsLoading(false);
   }, [navigate]);
 
@@ -66,6 +85,18 @@ export function Perfil() {
     }
   };
 
+  const handleAddEspecialidade = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val && !especialidades.includes(val)) {
+      setEspecialidades([...especialidades, val]);
+    }
+    e.target.value = "";
+  };
+
+  const removeEspecialidade = (esp: string) => {
+    setEspecialidades(especialidades.filter((item) => item !== esp));
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -74,28 +105,18 @@ export function Perfil() {
       Swal.fire({
         icon: "warning",
         title: "Nome Incompleto",
-        text: "Por favor, informe seu nome e sobrenome.",
-      });
-      setIsSaving(false);
-      return;
-    }
-
-    if (user?.tipo === "MEDICO" && (!crm || !/^\d+\/[A-Z]{2}$/.test(crm))) {
-      Swal.fire({
-        icon: "warning",
-        title: "CRM Incompleto",
-        text: "Por favor, digite os números e a sigla do estado.",
+        text: "Informe seu nome e sobrenome.",
       });
       setIsSaving(false);
       return;
     }
 
     const telefoneLimpo = telefone.replace(/\D/g, "");
-
     const payload = {
       nome,
       telefone: telefoneLimpo,
       crm: user?.tipo === "MEDICO" ? crm : undefined,
+      especializacao: especialidades.join(", "),
     };
 
     try {
@@ -103,74 +124,38 @@ export function Perfil() {
         `http://localhost:8080/api/usuarios/perfil/${user?.id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("activeAgeToken")}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         },
       );
-
       if (res.ok) {
         const usuarioAtualizado = await res.json();
-
-        if (
-          usuarioAtualizado.tipo === "MEDICO" &&
-          user?.statusValidacao === "REPROVADO"
-        ) {
-          usuarioAtualizado.statusValidacao = "PENDENTE";
-        }
-
         localStorage.setItem(
           "activeAgeUser",
           JSON.stringify(usuarioAtualizado),
         );
         setUser(usuarioAtualizado);
-
         Swal.fire(
           "Atualizado!",
           "Seus dados foram salvos com sucesso.",
           "success",
         );
       } else {
-        const userFakeUpdate = {
-          ...user,
-          nome,
-          telefone,
-          crm,
-          statusValidacao:
-            user?.statusValidacao === "REPROVADO"
-              ? "PENDENTE"
-              : user?.statusValidacao,
-        };
-        localStorage.setItem("activeAgeUser", JSON.stringify(userFakeUpdate));
-        setUser(userFakeUpdate as Usuario);
-
-        Swal.fire(
-          "Atualizado!",
-          "Seus dados foram atualizados no navegador (Modo Simulação).",
-          "success",
-        );
+        Swal.fire("Erro", "Ocorreu um problema ao atualizar.", "error");
       }
     } catch (error) {
-      Swal.fire("Erro", "Não foi possível conectar ao servidor.", "error");
+      Swal.fire("Erro", "Servidor offline.", "error");
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoading || !user) {
+  if (isLoading || !user)
     return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{ height: "60vh" }}
-      >
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Carregando...</span>
-        </div>
+      <div className="text-center mt-5">
+        <div className="spinner-border"></div>
       </div>
     );
-  }
 
   const avatarColor =
     user.tipo === "PACIENTE"
@@ -198,26 +183,15 @@ export function Perfil() {
               <h1 className="fw-bold mb-1" style={{ color: "var(--aa-brown)" }}>
                 Meu Perfil
               </h1>
-              <p className="fs-5 text-muted mb-0">
-                Gerencie suas informações pessoais e credenciais.
-              </p>
+              <p className="text-muted mb-0">Gerencie suas informações.</p>
             </div>
           </header>
 
           {user.tipo === "MEDICO" && user.statusValidacao === "REPROVADO" && (
-            <div className="alert alert-danger shadow-sm mb-4" role="alert">
-              <h4 className="alert-heading fw-bold">
-                <i className="bi bi-exclamation-octagon-fill me-2"></i>Atenção
-                Necessária
-              </h4>
+            <div className="alert alert-danger shadow-sm mb-4">
+              <h4 className="alert-heading fw-bold">Validação Recusada</h4>
               <p>
-                Sua validação foi recusada pelo administrador:{" "}
-                <strong>"{user.mensagemValidacao}"</strong>
-              </p>
-              <hr />
-              <p className="mb-0">
-                Por favor, atualize os dados incorretos abaixo e salve para
-                submeter a uma nova análise.
+                Motivo: <strong>"{user.mensagemValidacao}"</strong>
               </p>
             </div>
           )}
@@ -226,42 +200,29 @@ export function Perfil() {
             className="card shadow-sm border-0 mb-4"
             style={{ borderRadius: "15px" }}
           >
-            <div className="card-header bg-white p-4 border-bottom-0">
-              <h4 className="mb-0 fw-bold" style={{ color: "var(--aa-brown)" }}>
-                <i className="bi bi-person-lines-fill me-2"></i>Dados Pessoais
-              </h4>
-            </div>
-            <div className="card-body p-4 pt-0">
+            <div className="card-body p-4">
               <form onSubmit={handleUpdateProfile}>
-                <div className="row g-3 mb-3">
-                  <div className="col-md-12">
-                    <div className="form-floating">
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="nome"
-                        placeholder="Nome Completo"
-                        required
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                      />
-                      <label htmlFor="nome">Nome Completo</label>
-                    </div>
-                  </div>
+                <div className="form-floating mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="nome"
+                    required
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                  />
+                  <label>Nome Completo</label>
                 </div>
-
                 <div className="row g-3 mb-3">
                   <div className="col-md-6">
                     <div className="form-floating">
                       <input
                         type="email"
                         className="form-control bg-light"
-                        id="email"
                         value={email}
-                        readOnly
                         disabled
                       />
-                      <label htmlFor="email">E-mail (Não alterável)</label>
+                      <label>E-mail</label>
                     </div>
                   </div>
                   <div className="col-md-6">
@@ -269,115 +230,81 @@ export function Perfil() {
                       <input
                         type="tel"
                         className="form-control"
-                        id="telefone"
-                        placeholder="(11) 99999-9999"
                         value={telefone}
                         onChange={handleTelefoneChange}
                       />
-                      <label htmlFor="telefone">Telefone</label>
+                      <label>Telefone</label>
                     </div>
                   </div>
                 </div>
 
                 {user.tipo === "MEDICO" && (
-                  <div className="row g-3 mb-4">
-                    <div className="col-md-6">
-                      <div className="form-floating">
-                        <input
-                          type="text"
-                          className={`form-control ${isCrmBloqueado ? "bg-light" : ""}`}
-                          id="crm"
-                          placeholder="CRM"
-                          value={crm}
-                          onChange={handleCrmChange}
-                          readOnly={isCrmBloqueado}
-                          disabled={isCrmBloqueado}
-                        />
-                        <label htmlFor="crm">
-                          CRM {isCrmBloqueado && "(Validado)"}
-                        </label>
-                      </div>
-                      {isCrmBloqueado && (
-                        <small className="text-muted mt-1 d-block">
-                          <i className="bi bi-lock-fill me-1"></i>O CRM não pode
-                          ser alterado durante ou após a análise.
-                        </small>
-                      )}
+                  <div
+                    className="card bg-light border-0 mb-4 p-4 mt-4"
+                    style={{ borderRadius: "15px" }}
+                  >
+                    <div className="form-floating mb-4">
+                      <input
+                        type="text"
+                        className={`form-control bg-white ${isCrmBloqueado ? "bg-light" : ""}`}
+                        value={crm}
+                        onChange={handleCrmChange}
+                        disabled={isCrmBloqueado}
+                      />
+                      <label>CRM {isCrmBloqueado && "(Validado)"}</label>
                     </div>
+                    <label className="form-label fw-bold text-muted mb-2">
+                      Especialidades Médicas
+                    </label>
+                    <div className="d-flex flex-wrap gap-2 mb-3">
+                      <span className="badge bg-secondary fs-6 py-2 shadow-sm">
+                        <i className="bi bi-star-fill text-warning me-1"></i>{" "}
+                        Geriatria (Padrão)
+                      </span>
+                      {especialidades.map((esp) => (
+                        <span
+                          key={esp}
+                          className="badge bg-primary fs-6 py-2 shadow-sm d-flex align-items-center"
+                        >
+                          {esp}{" "}
+                          <i
+                            className="bi bi-x-circle ms-2"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => removeEspecialidade(esp)}
+                          ></i>
+                        </span>
+                      ))}
+                    </div>
+                    <select
+                      className="form-select bg-white"
+                      onChange={handleAddEspecialidade}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>
+                        + Adicionar outra especialização
+                      </option>
+                      {LISTA_ESPECIALIDADES.map((esp) => (
+                        <option
+                          key={esp}
+                          value={esp}
+                          disabled={especialidades.includes(esp)}
+                        >
+                          {esp}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
-
-                {user.tipo === "PACIENTE" && user.cpf && (
-                  <div className="row g-3 mb-4">
-                    <div className="col-md-6">
-                      <div className="form-floating">
-                        <input
-                          type="text"
-                          className="form-control bg-light"
-                          id="cpf"
-                          value={user.cpf}
-                          readOnly
-                          disabled
-                        />
-                        <label htmlFor="cpf">CPF (Não alterável)</label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 <div className="d-flex justify-content-end">
                   <button
                     type="submit"
                     className="btn btn-primary btn-lg px-5 shadow-sm"
                     disabled={isSaving}
                   >
-                    {isSaving ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2"></span>{" "}
-                        Salvando...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-floppy me-2"></i>Salvar Alterações
-                      </>
-                    )}
+                    {isSaving ? "Salvando..." : "Salvar Alterações"}
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-
-          <div
-            className="card shadow-sm border-0"
-            style={{ borderRadius: "15px" }}
-          >
-            <div
-              className="card-body p-4 d-flex justify-content-between align-items-center bg-light rounded-bottom"
-              style={{ borderRadius: "15px" }}
-            >
-              <div>
-                <h5
-                  className="fw-bold mb-1"
-                  style={{ color: "var(--aa-brown)" }}
-                >
-                  <i className="bi bi-shield-lock me-2"></i>Segurança
-                </h5>
-                <p className="text-muted mb-0">
-                  Deseja alterar sua senha de acesso?
-                </p>
-              </div>
-              <button
-                className="btn btn-outline-secondary"
-                onClick={() =>
-                  Swal.fire(
-                    "Em Breve",
-                    "A funcionalidade de troca de senha será liberada nas próximas atualizações.",
-                    "info",
-                  )
-                }
-              >
-                Alterar Senha
-              </button>
             </div>
           </div>
         </div>

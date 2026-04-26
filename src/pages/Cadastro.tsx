@@ -2,6 +2,19 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
+const LISTA_ESPECIALIDADES = [
+  "Cardiologia",
+  "Neurologia",
+  "Psiquiatria",
+  "Ortopedia",
+  "Nutrologia",
+  "Oncologia",
+  "Reumatologia",
+  "Endocrinologia",
+  "Dermatologia",
+  "Pneumologia",
+];
+
 export function Cadastro() {
   const navigate = useNavigate();
 
@@ -13,6 +26,7 @@ export function Cadastro() {
   const [telefone, setTelefone] = useState("");
   const [cpf, setCpf] = useState("");
   const [crm, setCrm] = useState("");
+  const [especialidades, setEspecialidades] = useState<string[]>([]);
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [aceitaTermos, setAceitaTermos] = useState(false);
@@ -42,14 +56,24 @@ export function Cadastro() {
     let value = e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, "");
     const numeros = value.replace(/[^0-9]/g, "");
     let letras = value.replace(/[^A-Z]/g, "");
-
     if (letras.length > 2) letras = letras.slice(0, 2);
-
     if (letras.length > 0) {
       setCrm(`${numeros}/${letras}`);
     } else {
       setCrm(numeros);
     }
+  };
+
+  const handleAddEspecialidade = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val && !especialidades.includes(val)) {
+      setEspecialidades([...especialidades, val]);
+    }
+    e.target.value = "";
+  };
+
+  const removeEspecialidade = (esp: string) => {
+    setEspecialidades(especialidades.filter((item) => item !== esp));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,28 +93,25 @@ export function Cadastro() {
       Swal.fire({
         icon: "warning",
         title: "E-mail Inválido",
-        text: "Por favor, informe um e-mail válido com domínio (ex: @gmail.com).",
+        text: "Informe um e-mail válido com domínio.",
       });
       return;
     }
 
-    if (tipoUsuario === "MEDICO") {
-      const crmRegex = /^\d+\/[A-Z]{2}$/;
-      if (!crmRegex.test(crm)) {
-        Swal.fire({
-          icon: "warning",
-          title: "CRM Incompleto",
-          text: "Por favor, digite os números e a sigla do estado (Ex: 123456/SP).",
-        });
-        return;
-      }
+    if (tipoUsuario === "MEDICO" && !/^\d+\/[A-Z]{2}$/.test(crm)) {
+      Swal.fire({
+        icon: "warning",
+        title: "CRM Incompleto",
+        text: "Digite os números e a sigla do estado.",
+      });
+      return;
     }
 
     if (senha !== confirmarSenha) {
       Swal.fire({
         icon: "error",
         title: "Senhas Diferentes",
-        text: "As senhas que você digitou não são iguais.",
+        text: "As senhas digitadas não são iguais.",
       });
       return;
     }
@@ -99,7 +120,7 @@ export function Cadastro() {
       Swal.fire({
         icon: "warning",
         title: "Termos Obrigatórios",
-        text: "Você precisa aceitar os Termos de Uso.",
+        text: "Aceite os Termos de Uso.",
       });
       return;
     }
@@ -117,6 +138,8 @@ export function Cadastro() {
       cpf: tipoUsuario === "PACIENTE" ? cpfLimpo : null,
       crm: tipoUsuario === "MEDICO" ? crm : null,
       telefone: telefoneLimpo,
+      especializacao:
+        tipoUsuario === "MEDICO" ? especialidades.join(", ") : null,
     };
 
     try {
@@ -130,28 +153,23 @@ export function Cadastro() {
         Swal.fire({
           icon: "success",
           title: "Conta Criada!",
-          text: "Seu cadastro foi realizado com sucesso. Faça seu login agora.",
+          text: "Seu cadastro foi realizado com sucesso.",
           confirmButtonColor: "var(--aa-green)",
-        }).then(() => {
-          navigate("/login");
-        });
+        }).then(() => navigate("/login"));
       } else {
         const errorData = await response.json().catch(() => null);
         Swal.fire({
           icon: "error",
           title: "Atenção",
-          text:
-            errorData?.message ||
-            "Este e-mail já está cadastrado em nossa base.",
+          text: errorData?.message || "E-mail já cadastrado.",
           confirmButtonColor: "var(--aa-orange)",
         });
       }
     } catch (error) {
-      console.error("Erro de requisição:", error);
       Swal.fire({
         icon: "warning",
         title: "Sistema Indisponível",
-        text: "Nossos servidores estão passando por uma instabilidade momentânea. Por favor, tente novamente em alguns instantes.",
+        text: "Servidores instáveis.",
         confirmButtonColor: "var(--aa-orange)",
       });
     } finally {
@@ -196,6 +214,7 @@ export function Cadastro() {
                         onChange={() => {
                           setTipoUsuario("PACIENTE");
                           setCrm("");
+                          setEspecialidades([]);
                         }}
                       />
                       <label
@@ -204,7 +223,7 @@ export function Cadastro() {
                       >
                         <i className="bi bi-person-heart fs-1 mb-2"></i>
                         <span className="fs-5 fw-bold">
-                          Paciente ou Cuidador
+                          Paciente / Cuidador
                         </span>
                       </label>
                     </div>
@@ -226,7 +245,6 @@ export function Cadastro() {
                       >
                         <i className="bi bi-bandaid fs-1 mb-2"></i>
                         <span className="fs-5 fw-bold">Médico Geriatra</span>
-                        <small className="mt-1 opacity-75">(Requer CRM)</small>
                       </label>
                     </div>
                   </div>
@@ -237,7 +255,7 @@ export function Cadastro() {
                     type="text"
                     className="form-control"
                     id="nome"
-                    placeholder="Nome Completo"
+                    placeholder="Nome"
                     required
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
@@ -252,12 +270,12 @@ export function Cadastro() {
                         type="email"
                         className="form-control"
                         id="email"
-                        placeholder="seu@email.com"
+                        placeholder="E-mail"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
-                      <label htmlFor="email">E-mail</label>
+                      <label>E-mail</label>
                     </div>
                   </div>
                   <div className="col-md-6">
@@ -266,49 +284,88 @@ export function Cadastro() {
                         type="tel"
                         className="form-control"
                         id="telefone"
-                        placeholder="(11) 99999-9999"
+                        placeholder="Telefone"
                         value={telefone}
                         onChange={handleTelefoneChange}
                       />
-                      <label htmlFor="telefone">Telefone (Opcional)</label>
+                      <label>Telefone</label>
                     </div>
                   </div>
                 </div>
 
-                <div
-                  className="form-floating mb-3"
-                  style={{ animation: "fadeIn 0.3s" }}
-                >
-                  {tipoUsuario === "PACIENTE" ? (
-                    <>
+                {tipoUsuario === "PACIENTE" ? (
+                  <div className="form-floating mb-3 animation-fade-in">
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="cpf"
+                      placeholder="CPF"
+                      required
+                      value={cpf}
+                      onChange={handleCpfChange}
+                    />
+                    <label>CPF</label>
+                  </div>
+                ) : (
+                  <div
+                    className="card bg-light border-0 mb-4 p-4 animation-fade-in"
+                    style={{ borderRadius: "15px" }}
+                  >
+                    <div className="form-floating mb-4">
                       <input
                         type="text"
-                        className="form-control"
-                        id="cpf"
-                        placeholder="000.000.000-00"
-                        required
-                        value={cpf}
-                        onChange={handleCpfChange}
-                      />
-                      <label htmlFor="cpf">CPF</label>
-                    </>
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        className="form-control"
+                        className="form-control bg-white"
                         id="crm"
-                        placeholder="123456/SP"
+                        placeholder="CRM"
                         required
                         value={crm}
                         onChange={handleCrmChange}
                       />
-                      <label htmlFor="crm">
-                        CRM (Digite os números e a sigla do estado)
-                      </label>
-                    </>
-                  )}
-                </div>
+                      <label>CRM (Ex: 123456/SP)</label>
+                    </div>
+
+                    <label className="form-label fw-bold text-muted mb-2">
+                      Especialidades Médicas
+                    </label>
+                    <div className="d-flex flex-wrap gap-2 mb-3">
+                      <span className="badge bg-secondary fs-6 py-2 shadow-sm">
+                        <i className="bi bi-star-fill text-warning me-1"></i>{" "}
+                        Geriatria (Padrão)
+                      </span>
+                      {especialidades.map((esp) => (
+                        <span
+                          key={esp}
+                          className="badge bg-primary fs-6 py-2 shadow-sm d-flex align-items-center"
+                        >
+                          {esp}{" "}
+                          <i
+                            className="bi bi-x-circle ms-2"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => removeEspecialidade(esp)}
+                          ></i>
+                        </span>
+                      ))}
+                    </div>
+                    <select
+                      className="form-select bg-white"
+                      onChange={handleAddEspecialidade}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>
+                        + Adicionar outra especialização
+                      </option>
+                      {LISTA_ESPECIALIDADES.map((esp) => (
+                        <option
+                          key={esp}
+                          value={esp}
+                          disabled={especialidades.includes(esp)}
+                        >
+                          {esp}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-floating mb-3 position-relative">
                   <input
@@ -320,7 +377,7 @@ export function Cadastro() {
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
                   />
-                  <label htmlFor="senha">Crie uma Senha</label>
+                  <label>Crie uma Senha</label>
                   <button
                     type="button"
                     className="btn btn-link position-absolute top-50 end-0 translate-middle-y text-secondary px-3"
@@ -337,12 +394,12 @@ export function Cadastro() {
                     type={showConfirmSenha ? "text" : "password"}
                     className="form-control pe-5"
                     id="confirmarSenha"
-                    placeholder="Confirme sua Senha"
+                    placeholder="Confirme"
                     required
                     value={confirmarSenha}
                     onChange={(e) => setConfirmarSenha(e.target.value)}
                   />
-                  <label htmlFor="confirmarSenha">Confirme sua Senha</label>
+                  <label>Confirme sua Senha</label>
                   <button
                     type="button"
                     className="btn btn-link position-absolute top-50 end-0 translate-middle-y text-secondary px-3"
@@ -367,13 +424,6 @@ export function Cadastro() {
                     Eu li e aceito os{" "}
                     <Link to="/termos" className="text-decoration-none fw-bold">
                       Termos de Uso
-                    </Link>{" "}
-                    e a{" "}
-                    <Link
-                      to="/privacidade"
-                      className="text-decoration-none fw-bold"
-                    >
-                      Política de Privacidade
                     </Link>
                     .
                   </label>
@@ -385,26 +435,15 @@ export function Cadastro() {
                     className="btn btn-primary btn-lg py-3 fs-5 shadow-sm"
                     disabled={isLoading}
                   >
-                    {isLoading ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          aria-hidden="true"
-                        ></span>{" "}
-                        Criando Conta...
-                      </>
-                    ) : (
-                      "Criar Minha Conta"
-                    )}
+                    {isLoading ? "Criando Conta..." : "Criar Minha Conta"}
                   </button>
                 </div>
               </form>
-
               <hr className="my-4" />
               <p className="text-center fs-5 mb-0">
                 Já tem uma conta?{" "}
                 <Link to="/login" className="text-decoration-none fw-bold">
-                  Faça seu login aqui
+                  Faça login
                 </Link>
               </p>
             </div>
