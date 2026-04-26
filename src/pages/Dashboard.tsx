@@ -12,19 +12,11 @@ interface Usuario {
   mensagemValidacao?: string;
 }
 
-interface PedidoValidacao {
-  idMedico: string;
-  nome: string;
-  crm: string;
-  dataSolicitacao: string;
-}
-
 export function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState<Usuario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const [pedidosAdmin, setPedidosAdmin] = useState<PedidoValidacao[]>([]);
+  const [pedidosAdmin, setPedidosAdmin] = useState<Usuario[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem("activeAgeToken");
@@ -44,48 +36,81 @@ export function Dashboard() {
     setUser(usuarioLogado);
 
     if (usuarioLogado.tipo === "ADMIN") {
-      setPedidosAdmin([
-        {
-          idMedico: "123",
-          nome: "Dra. Ana Silva",
-          crm: "98765/SP",
-          dataSolicitacao: "25/04/2026",
-        },
-        {
-          idMedico: "456",
-          nome: "Dr. João Souza",
-          crm: "12345/RJ",
-          dataSolicitacao: "24/04/2026",
-        },
-      ]);
+      carregarPendentes();
     }
 
     setIsLoading(false);
   }, [navigate]);
 
-  if (isLoading || !user) {
-    return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{ height: "60vh" }}
-      >
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Carregando...</span>
-        </div>
-      </div>
-    );
-  }
+  const carregarPendentes = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/validacoes/pendentes");
+      if (res.ok) {
+        const data = await res.json();
+        setPedidosAdmin(data);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar pendentes:", error);
+    }
+  };
 
   const solicitarValidacao = async () => {
-    Swal.fire({
-      icon: "success",
-      title: "Enviado!",
-      text: "Seus dados foram enviados para análise do Administrador.",
-      confirmButtonColor: "var(--aa-green)",
-    });
-    const updatedUser = { ...user, statusValidacao: "EM_ANALISE" as const };
-    setUser(updatedUser);
-    localStorage.setItem("activeAgeUser", JSON.stringify(updatedUser));
+    if (!user) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/validacoes/solicitar/${user.id}`,
+        { method: "POST" },
+      );
+
+      if (res.ok) {
+        const usuarioAtualizado = await res.json();
+        Swal.fire({
+          icon: "success",
+          title: "Enviado!",
+          text: "Seus dados foram enviados para análise do Administrador.",
+          confirmButtonColor: "var(--aa-green)",
+        });
+        setUser(usuarioAtualizado);
+        localStorage.setItem(
+          "activeAgeUser",
+          JSON.stringify(usuarioAtualizado),
+        );
+      }
+    } catch (error) {
+      Swal.fire("Erro", "Não foi possível conectar ao servidor.", "error");
+    }
+  };
+
+  const enviarAvaliacao = async (
+    id: string,
+    nome: string,
+    status: string,
+    mensagem: string,
+  ) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/api/validacoes/avaliar/${id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status, mensagem }),
+        },
+      );
+
+      if (res.ok) {
+        setPedidosAdmin(pedidosAdmin.filter((p) => p.id !== id));
+        Swal.fire(
+          status === "APROVADO" ? "Aprovado!" : "Reprovado!",
+          status === "APROVADO"
+            ? "O CRM foi validado com sucesso."
+            : `O médico foi notificado: ${mensagem}`,
+          "success",
+        );
+      }
+    } catch (error) {
+      Swal.fire("Erro", "Não foi possível enviar a avaliação.", "error");
+    }
   };
 
   const aprovarMedico = (id: string, nome: string) => {
@@ -100,8 +125,7 @@ export function Dashboard() {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        setPedidosAdmin(pedidosAdmin.filter((p) => p.idMedico !== id));
-        Swal.fire("Aprovado!", "O CRM foi validado com sucesso.", "success");
+        enviarAvaliacao(id, nome, "APROVADO", "Aprovado com sucesso.");
       }
     });
   };
@@ -111,9 +135,7 @@ export function Dashboard() {
       title: `Reprovar ${nome}?`,
       input: "textarea",
       inputLabel: "Motivo da reprovação (Feedback para o médico)",
-      inputPlaceholder:
-        "Ex: A foto do CRM está ilegível ou o CRM é inválido...",
-      inputAttributes: { "aria-label": "Motivo da reprovação" },
+      inputPlaceholder: "Ex: O CRM fornecido consta como inativo...",
       showCancelButton: true,
       confirmButtonColor: "var(--aa-orange)",
       cancelButtonColor: "#6c757d",
@@ -127,15 +149,23 @@ export function Dashboard() {
       },
     }).then((result) => {
       if (result.isConfirmed) {
-        setPedidosAdmin(pedidosAdmin.filter((p) => p.idMedico !== id));
-        Swal.fire(
-          "Reprovado!",
-          `O médico foi notificado com o motivo: ${result.value}`,
-          "success",
-        );
+        enviarAvaliacao(id, nome, "REPROVADO", result.value);
       }
     });
   };
+
+  if (isLoading || !user) {
+    return (
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ height: "60vh" }}
+      >
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Carregando...</span>
+        </div>
+      </div>
+    );
+  }
 
   const renderPaciente = () => (
     <div className="row g-4 animation-fade-in">
@@ -190,7 +220,9 @@ export function Dashboard() {
   );
 
   const renderMedico = () => {
-    if (user.statusValidacao === "APROVADO") {
+    const statusAtual = user.statusValidacao;
+
+    if (statusAtual === "APROVADO") {
       return (
         <div className="row g-4 animation-fade-in">
           <div className="col-lg-8">
@@ -241,7 +273,7 @@ export function Dashboard() {
             }}
           >
             <div className="card-body p-4 p-md-5 text-center">
-              {user.statusValidacao === "PENDENTE" && (
+              {statusAtual === "PENDENTE" && (
                 <>
                   <i
                     className="bi bi-shield-lock display-1 mb-3"
@@ -254,9 +286,7 @@ export function Dashboard() {
                     Validação Obrigatória
                   </h2>
                   <p className="fs-5 text-muted mb-4">
-                    Para garantir a segurança dos nossos pacientes, precisamos
-                    validar sua identidade profissional. Confirme seus dados
-                    abaixo para enviar à moderação.
+                    Confirme seus dados abaixo para enviar à moderação.
                   </p>
                   <div className="bg-light p-4 rounded text-start mb-4">
                     <p className="mb-2">
@@ -279,7 +309,7 @@ export function Dashboard() {
                 </>
               )}
 
-              {user.statusValidacao === "EM_ANALISE" && (
+              {statusAtual === "EM_ANALISE" && (
                 <>
                   <i className="bi bi-hourglass-split display-1 mb-3 text-warning"></i>
                   <h2
@@ -289,9 +319,8 @@ export function Dashboard() {
                     Documentos em Análise
                   </h2>
                   <p className="fs-5 text-muted">
-                    Sua solicitação foi recebida e está sendo analisada pela
-                    nossa equipe administrativa. O prazo médio é de até 24 horas
-                    úteis.
+                    Sua solicitação está sendo analisada pela nossa equipe
+                    administrativa.
                   </p>
                   <div className="progress mt-4" style={{ height: "10px" }}>
                     <div
@@ -302,24 +331,16 @@ export function Dashboard() {
                 </>
               )}
 
-              {user.statusValidacao === "REPROVADO" && (
+              {statusAtual === "REPROVADO" && (
                 <>
                   <i className="bi bi-x-octagon display-1 mb-3 text-danger"></i>
                   <h2 className="fw-bold mb-3 text-danger">
                     Validação Recusada
                   </h2>
-                  <p className="fs-5 text-muted mb-2">
-                    Infelizmente não pudemos validar seu cadastro pelo seguinte
-                    motivo:
-                  </p>
+                  <p className="fs-5 text-muted mb-2">Motivo da reprovação:</p>
                   <div className="alert alert-danger text-start p-3 mb-4">
-                    <strong>Feedback do Admin:</strong> "
-                    {user.mensagemValidacao || "CRM inválido ou inativo."}"
+                    <strong>Feedback:</strong> "{user.mensagemValidacao}"
                   </div>
-                  <p className="text-muted mb-4">
-                    Por favor, atualize seus dados no menu Perfil e tente
-                    solicitar novamente.
-                  </p>
                   <button
                     className="btn btn-outline-danger btn-lg px-5"
                     onClick={() => navigate("/perfil")}
@@ -345,13 +366,13 @@ export function Dashboard() {
 
         {pedidosAdmin.length === 0 ? (
           <div className="alert alert-success border-0 shadow-sm">
-            <i className="bi bi-check-circle-fill me-2"></i>Tudo limpo! Não há
-            médicos aguardando validação.
+            <i className="bi bi-check-circle-fill me-2"></i>Não há médicos
+            aguardando validação no momento.
           </div>
         ) : (
           <div className="row g-3">
             {pedidosAdmin.map((pedido) => (
-              <div key={pedido.idMedico} className="col-md-6">
+              <div key={pedido.id} className="col-md-6">
                 <div
                   className="card shadow-sm border-0 h-100"
                   style={{ borderRadius: "10px" }}
@@ -370,24 +391,18 @@ export function Dashboard() {
                           {pedido.crm}
                         </span>
                       </div>
-                      <small className="text-muted">
-                        {pedido.dataSolicitacao}
-                      </small>
+                      <small className="text-muted">Aguardando Avaliação</small>
                     </div>
                     <div className="d-flex gap-2">
                       <button
                         className="btn btn-success w-50"
-                        onClick={() =>
-                          aprovarMedico(pedido.idMedico, pedido.nome)
-                        }
+                        onClick={() => aprovarMedico(pedido.id, pedido.nome)}
                       >
                         <i className="bi bi-check-lg me-1"></i> Aprovar
                       </button>
                       <button
                         className="btn btn-outline-danger w-50"
-                        onClick={() =>
-                          reprovarMedico(pedido.idMedico, pedido.nome)
-                        }
+                        onClick={() => reprovarMedico(pedido.id, pedido.nome)}
                       >
                         <i className="bi bi-x-lg me-1"></i> Reprovar
                       </button>
