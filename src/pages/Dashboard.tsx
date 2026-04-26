@@ -17,6 +17,8 @@ interface Agendamento {
   status: string;
   linkTeleconsulta?: string;
   medicoNome?: string;
+  medicoCrm?: string;
+  medicoEspecializacao?: string;
 }
 
 export function Dashboard() {
@@ -134,31 +136,35 @@ export function Dashboard() {
               <i className="bi bi-calendar-event me-2"></i>Sua Próxima Consulta
             </h4>
             {proxima ? (
-              <div className="mt-3 p-3 bg-light rounded d-flex justify-content-between align-items-center flex-wrap gap-3">
+              <div className="mt-3 p-4 bg-light rounded d-flex justify-content-between align-items-center flex-wrap gap-3 shadow-sm border">
                 <div>
                   <h5 className="mb-1 fw-bold">
-                    {proxima.medicoNome || "Teleconsulta Agendada"}
+                    {proxima.medicoNome || "Profissional não identificado"}
                   </h5>
-                  <p className="mb-0 text-muted">
-                    <i className="bi bi-calendar3 me-2"></i>
+                  <p className="mb-2 text-muted small fw-semibold">
+                    {proxima.medicoEspecializacao || "Geriatria"} | CRM:{" "}
+                    {proxima.medicoCrm || "N/A"}
+                  </p>
+                  <p className="mb-0 text-dark fw-bold fs-5">
+                    <i className="bi bi-calendar3 text-primary me-2"></i>
                     {formatarDataHora(proxima.dataHora).dia} às{" "}
                     {formatarDataHora(proxima.dataHora).hora}
                   </p>
                 </div>
-                <div className="d-flex gap-2">
+                <div className="d-flex flex-column gap-2 align-items-stretch">
+                  <a
+                    href={proxima.linkTeleconsulta}
+                    target="_blank"
+                    className="btn btn-primary shadow-sm btn-lg fw-bold"
+                  >
+                    <i className="bi bi-camera-video me-2"></i>Entrar na Sala
+                  </a>
                   <button
                     className="btn btn-outline-danger shadow-sm"
                     onClick={() => handleCancelar(proxima.id)}
                   >
-                    Cancelar
+                    Cancelar Consulta
                   </button>
-                  <a
-                    href={proxima.linkTeleconsulta}
-                    target="_blank"
-                    className="btn btn-primary shadow-sm"
-                  >
-                    <i className="bi bi-camera-video me-2"></i>Entrar
-                  </a>
                 </div>
               </div>
             ) : (
@@ -177,42 +183,61 @@ export function Dashboard() {
           style={{ borderRadius: "15px" }}
         >
           <div className="card-body p-4">
-            <h5 style={{ color: "var(--aa-brown)" }} className="mb-3">
+            <h5 style={{ color: "var(--aa-brown)" }} className="mb-4">
               <i className="bi bi-list-ul me-2"></i>Minha Agenda
             </h5>
             {outrasConsultas.length > 0 ? (
-              <div className="list-group list-group-flush">
+              <div className="d-flex flex-column gap-3">
                 {outrasConsultas.map((a) => (
                   <div
                     key={a.id}
-                    className="list-group-item d-flex justify-content-between align-items-center px-0 border-light"
+                    className="p-4 border shadow-sm bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3"
+                    style={{ borderRadius: "12px" }}
                   >
-                    <span>
-                      <strong>{a.medicoNome}</strong> -{" "}
-                      {formatarDataHora(a.dataHora).dia} às{" "}
-                      {formatarDataHora(a.dataHora).hora}
-                    </span>
-                    <button
-                      className="btn btn-link text-danger p-0 border-0"
-                      onClick={() => handleCancelar(a.id)}
-                    >
-                      Cancelar
-                    </button>
+                    <div>
+                      <h5
+                        className="fw-bold mb-1"
+                        style={{ color: "var(--aa-brown)" }}
+                      >
+                        {a.medicoNome}
+                      </h5>
+                      <div className="text-muted small mb-3 fw-semibold">
+                        <i className="bi bi-star-fill text-warning me-1"></i>{" "}
+                        {a.medicoEspecializacao || "Geriatria"} &nbsp;|&nbsp;
+                        CRM: {a.medicoCrm || "N/A"}
+                      </div>
+                      <span className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill">
+                        <i className="bi bi-clock-fill me-2"></i>
+                        {formatarDataHora(a.dataHora).dia} às{" "}
+                        {formatarDataHora(a.dataHora).hora}
+                      </span>
+                    </div>
+                    <div>
+                      <button
+                        className="btn btn-outline-danger px-4 shadow-sm fw-bold"
+                        onClick={() => handleCancelar(a.id)}
+                      >
+                        <i className="bi bi-x-circle me-2"></i>Cancelar
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted small mb-0">
-                Sem outros compromissos na agenda.
-              </p>
+              <div className="alert alert-light text-center border">
+                <p className="text-muted small mb-0">
+                  Sem outros compromissos na agenda.
+                </p>
+              </div>
             )}
           </div>
         </div>
       </div>
+
       <div className="col-lg-4">
         <Link to="/busca" className="text-decoration-none">
           <div
-            className="card shadow-sm border-0 h-100 service-feature bg-white"
+            className="card shadow-sm border-0 service-feature bg-white"
             style={{ borderRadius: "15px" }}
           >
             <div className="card-body text-center p-4">
@@ -243,24 +268,36 @@ export function Dashboard() {
               <i className="bi bi-calendar-check me-2"></i>Agenda do Dia
             </h4>
             {agendamentos.filter((a) => a.status === "AGENDADO").length > 0 ? (
-              <div className="list-group list-group-flush">
+              <div className="list-group list-group-flush gap-2">
                 {agendamentos
                   .filter((a) => a.status === "AGENDADO")
+                  .sort(
+                    (a, b) =>
+                      new Date(a.dataHora).getTime() -
+                      new Date(b.dataHora).getTime(),
+                  )
                   .map((a) => (
                     <div
                       key={a.id}
-                      className="list-group-item d-flex justify-content-between align-items-center border-0 px-0 mb-2 bg-light rounded p-3"
+                      className="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center border rounded p-3 shadow-sm bg-white"
                     >
-                      <div>
-                        <span className="fw-bold">
-                          {formatarDataHora(a.dataHora).dia} -{" "}
+                      <div
+                        className="mb-3 mb-md-0 ps-3"
+                        style={{ borderLeft: "4px solid var(--aa-orange)" }}
+                      >
+                        <span className="fw-bold fs-5 text-dark d-block">
+                          {formatarDataHora(a.dataHora).dia} às{" "}
                           {formatarDataHora(a.dataHora).hora}
-                        </span>{" "}
-                        - Consulta
+                        </span>
+                        <span className="text-muted fw-semibold small">
+                          <i className="bi bi-person-fill me-1"></i> Paciente
+                          Identificado
+                        </span>
                       </div>
-                      <div className="d-flex gap-2">
+
+                      <div className="d-flex gap-2 w-100 w-md-auto justify-content-end">
                         <button
-                          className="btn btn-sm btn-outline-danger"
+                          className="btn btn-outline-danger px-3 shadow-sm fw-bold"
                           onClick={() => handleCancelar(a.id)}
                         >
                           Cancelar
@@ -268,18 +305,20 @@ export function Dashboard() {
                         <a
                           href={a.linkTeleconsulta}
                           target="_blank"
-                          className="btn btn-sm btn-primary"
+                          className="btn btn-primary px-4 shadow-sm fw-bold"
                         >
-                          Iniciar
+                          <i className="bi bi-camera-video me-2"></i>Iniciar
                         </a>
                       </div>
                     </div>
                   ))}
               </div>
             ) : (
-              <div className="text-center py-4 text-muted">
-                <i className="bi bi-inbox fs-1 opacity-50 mb-2 d-block"></i>
-                Agenda livre no momento.
+              <div className="text-center py-5 bg-light rounded border">
+                <i className="bi bi-inbox fs-1 text-muted opacity-50 mb-3 d-block"></i>
+                <h5 className="fw-bold text-muted mb-0">
+                  Agenda livre no momento.
+                </h5>
               </div>
             )}
           </div>
