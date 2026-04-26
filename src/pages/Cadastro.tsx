@@ -411,19 +411,35 @@ export function Cadastro() {
                   </button>
                 </div>
 
-                <div className="form-check mb-4">
+                <div className="form-check mb-4 d-flex align-items-center justify-content-start text-start">
                   <input
-                    className="form-check-input"
+                    className="form-check-input me-2 mt-0"
                     type="checkbox"
                     id="termos"
                     required
                     checked={aceitaTermos}
                     onChange={(e) => setAceitaTermos(e.target.checked)}
                   />
-                  <label className="form-check-label" htmlFor="termos">
+
+                  <label
+                    className="form-check-label text-muted"
+                    htmlFor="termos"
+                  >
                     Eu li e aceito os{" "}
-                    <Link to="/termos" className="text-decoration-none fw-bold">
+                    <Link
+                      to="/termos"
+                      className="text-decoration-none fw-bold"
+                      style={{ color: "var(--aa-orange)" }}
+                    >
                       Termos de Uso
+                    </Link>{" "}
+                    e{" "}
+                    <Link
+                      to="/privacidade"
+                      className="text-decoration-none fw-bold"
+                      style={{ color: "var(--aa-orange)" }}
+                    >
+                      Política de Privacidade
                     </Link>
                     .
                   </label>

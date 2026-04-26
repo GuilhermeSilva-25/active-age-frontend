@@ -20,6 +20,7 @@ interface Agendamento {
   medicoNome?: string;
   medicoCrm?: string;
   medicoEspecializacao?: string;
+  pacienteNome?: string;
 }
 
 export function Dashboard() {
@@ -412,9 +413,10 @@ export function Dashboard() {
                               {formatarDataHora(a.dataHora).dia} às{" "}
                               {formatarDataHora(a.dataHora).hora}
                             </span>
+                            {/* CORREÇÃO PONTO 3: Agora exibe o nome real do paciente! */}
                             <span className="text-muted fw-semibold small">
                               <i className="bi bi-person-fill me-1"></i>{" "}
-                              Paciente Identificado
+                              {a.pacienteNome || "Paciente Identificado"}
                             </span>
                           </div>
                           <div className="d-flex gap-2 w-100 w-md-auto justify-content-end">
@@ -486,11 +488,41 @@ export function Dashboard() {
                     Validação Obrigatória
                   </h2>
                   <p className="fs-5 text-muted mb-4">
-                    Confirme seus dados abaixo para enviar à moderação.
+                    Confira os dados que serão enviados para a equipe de
+                    moderação avaliar e validar o seu registro médico (CRM).
                   </p>
+
+                  <div
+                    className="card bg-light border-0 shadow-sm text-start mx-auto mb-5"
+                    style={{ maxWidth: "400px", borderRadius: "15px" }}
+                  >
+                    <div className="card-body p-4">
+                      <h6 className="fw-bold mb-3 text-muted border-bottom pb-2">
+                        <i className="bi bi-person-vcard me-2"></i>Meus Dados
+                        para Validação
+                      </h6>
+                      <p className="mb-2">
+                        <strong>Nome Completo:</strong> <br />
+                        {user.nome}
+                      </p>
+                      <p className="mb-2">
+                        <strong>E-mail:</strong> <br />
+                        {user.email}
+                      </p>
+                      <p className="mb-0">
+                        <strong>CRM:</strong> <br />
+                        {user.crm || "Não informado, edite o seu perfil antes!"}
+                      </p>
+                    </div>
+                  </div>
+
                   <button
-                    className="btn btn-primary btn-lg px-5"
+                    className="btn btn-primary btn-lg px-5 shadow-sm"
                     onClick={solicitarValidacao}
+                    disabled={!user.crm}
+                    title={
+                      !user.crm ? "Preencha o CRM no seu Perfil primeiro." : ""
+                    }
                   >
                     <i className="bi bi-send-check me-2"></i> Enviar para
                     Análise
