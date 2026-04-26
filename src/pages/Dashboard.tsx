@@ -56,19 +56,17 @@ export function Dashboard() {
 
   const solicitarValidacao = async () => {
     if (!user) return;
-
     try {
       const res = await fetch(
         `http://localhost:8080/api/validacoes/solicitar/${user.id}`,
         { method: "POST" },
       );
-
       if (res.ok) {
         const usuarioAtualizado = await res.json();
         Swal.fire({
           icon: "success",
           title: "Enviado!",
-          text: "Seus dados foram enviados para análise do Administrador.",
+          text: "Dados enviados para análise.",
           confirmButtonColor: "var(--aa-green)",
         });
         setUser(usuarioAtualizado);
@@ -78,7 +76,7 @@ export function Dashboard() {
         );
       }
     } catch (error) {
-      Swal.fire("Erro", "Não foi possível conectar ao servidor.", "error");
+      Swal.fire("Erro", "Falha na conexão.", "error");
     }
   };
 
@@ -97,14 +95,11 @@ export function Dashboard() {
           body: JSON.stringify({ status, mensagem }),
         },
       );
-
       if (res.ok) {
         setPedidosAdmin(pedidosAdmin.filter((p) => p.id !== id));
         Swal.fire(
           status === "APROVADO" ? "Aprovado!" : "Reprovado!",
-          status === "APROVADO"
-            ? "O CRM foi validado com sucesso."
-            : `O médico foi notificado: ${mensagem}`,
+          status === "APROVADO" ? "CRM validado." : `Médico notificado.`,
           "success",
         );
       }
@@ -116,7 +111,7 @@ export function Dashboard() {
   const aprovarMedico = (id: string, nome: string) => {
     Swal.fire({
       title: `Aprovar ${nome}?`,
-      text: "Este médico terá acesso total à plataforma.",
+      text: "Terá acesso total.",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "var(--aa-green)",
@@ -124,9 +119,8 @@ export function Dashboard() {
       confirmButtonText: "Sim, aprovar!",
       cancelButtonText: "Cancelar",
     }).then((result) => {
-      if (result.isConfirmed) {
+      if (result.isConfirmed)
         enviarAvaliacao(id, nome, "APROVADO", "Aprovado com sucesso.");
-      }
     });
   };
 
@@ -134,8 +128,7 @@ export function Dashboard() {
     Swal.fire({
       title: `Reprovar ${nome}?`,
       input: "textarea",
-      inputLabel: "Motivo da reprovação (Feedback para o médico)",
-      inputPlaceholder: "Ex: O CRM fornecido consta como inativo...",
+      inputLabel: "Motivo da reprovação",
       showCancelButton: true,
       confirmButtonColor: "var(--aa-orange)",
       cancelButtonColor: "#6c757d",
@@ -143,26 +136,31 @@ export function Dashboard() {
       cancelButtonText: "Cancelar",
       preConfirm: (feedback) => {
         if (!feedback) {
-          Swal.showValidationMessage("O feedback é obrigatório para reprovar.");
+          Swal.showValidationMessage("O feedback é obrigatório.");
         }
         return feedback;
       },
     }).then((result) => {
-      if (result.isConfirmed) {
+      if (result.isConfirmed)
         enviarAvaliacao(id, nome, "REPROVADO", result.value);
-      }
     });
+  };
+
+  const getPrimeiroNome = (nomeCompleto: string) => {
+    const partes = nomeCompleto.trim().split(" ");
+    if (
+      partes[0].toLowerCase() === "dr." ||
+      partes[0].toLowerCase() === "dra."
+    ) {
+      return partes.length > 1 ? `${partes[0]} ${partes[1]}` : partes[0];
+    }
+    return partes[0];
   };
 
   if (isLoading || !user) {
     return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{ height: "60vh" }}
-      >
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Carregando...</span>
-        </div>
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary"></div>
       </div>
     );
   }
@@ -290,17 +288,6 @@ export function Dashboard() {
                   <p className="fs-5 text-muted mb-4">
                     Confirme seus dados abaixo para enviar à moderação.
                   </p>
-                  <div className="bg-light p-4 rounded text-start mb-4">
-                    <p className="mb-2">
-                      <strong>Nome Completo:</strong> {user.nome}
-                    </p>
-                    <p className="mb-0">
-                      <strong>CRM:</strong>{" "}
-                      <span className="badge bg-secondary fs-6">
-                        {user.crm || "Não informado"}
-                      </span>
-                    </p>
-                  </div>
                   <button
                     className="btn btn-primary btn-lg px-5"
                     onClick={solicitarValidacao}
@@ -310,7 +297,6 @@ export function Dashboard() {
                   </button>
                 </>
               )}
-
               {statusAtual === "EM_ANALISE" && (
                 <>
                   <i className="bi bi-hourglass-split display-1 mb-3 text-warning"></i>
@@ -321,25 +307,17 @@ export function Dashboard() {
                     Documentos em Análise
                   </h2>
                   <p className="fs-5 text-muted">
-                    Sua solicitação está sendo analisada pela nossa equipe
+                    Sua solicitação está sendo analisada pela equipe
                     administrativa.
                   </p>
-                  <div className="progress mt-4" style={{ height: "10px" }}>
-                    <div
-                      className="progress-bar progress-bar-striped progress-bar-animated bg-warning w-100"
-                      role="progressbar"
-                    ></div>
-                  </div>
                 </>
               )}
-
               {statusAtual === "REPROVADO" && (
                 <>
                   <i className="bi bi-x-octagon display-1 mb-3 text-danger"></i>
                   <h2 className="fw-bold mb-3 text-danger">
                     Validação Recusada
                   </h2>
-                  <p className="fs-5 text-muted mb-2">Motivo da reprovação:</p>
                   <div className="alert alert-danger text-start p-3 mb-4">
                     <strong>Feedback:</strong> "{user.mensagemValidacao}"
                   </div>
@@ -365,11 +343,9 @@ export function Dashboard() {
         <h3 className="fw-bold mb-3" style={{ color: "var(--aa-brown)" }}>
           Validações Pendentes
         </h3>
-
         {pedidosAdmin.length === 0 ? (
           <div className="alert alert-success border-0 shadow-sm">
-            <i className="bi bi-check-circle-fill me-2"></i>Não há médicos
-            aguardando validação no momento.
+            <i className="bi bi-check-circle-fill me-2"></i>Tudo limpo!
           </div>
         ) : (
           <div className="row g-3">
@@ -393,7 +369,6 @@ export function Dashboard() {
                           {pedido.crm}
                         </span>
                       </div>
-                      <small className="text-muted">Aguardando Avaliação</small>
                     </div>
                     <div className="d-flex gap-2">
                       <button
@@ -421,29 +396,36 @@ export function Dashboard() {
 
   return (
     <main className="container my-5 pb-5">
-      <div className="mb-5 pb-3 border-bottom">
-        <h1 className="fw-bold mb-1" style={{ color: "var(--aa-brown)" }}>
-          Olá, {user.nome.split(" ")[0]}! 👋
-        </h1>
-        <p className="fs-5 text-muted mb-0">
-          {user.tipo === "PACIENTE" && "Como está sua saúde hoje?"}
-          {user.tipo === "MEDICO" &&
-            "Área restrita para profissionais da saúde."}
-          {user.tipo === "ADMIN" && "Painel Administrativo Active Age."}
-        </p>
+      <div className="mb-5 pb-3 border-bottom d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+        <div>
+          <h1 className="fw-bold mb-1" style={{ color: "var(--aa-brown)" }}>
+            Olá, {getPrimeiroNome(user.nome)}! 👋
+          </h1>
+          <p className="fs-5 text-muted mb-0">
+            {user.tipo === "PACIENTE" && "Como está sua saúde hoje?"}
+            {user.tipo === "MEDICO" &&
+              "Área restrita para profissionais da saúde."}
+            {user.tipo === "ADMIN" && "Painel Administrativo Active Age."}
+          </p>
+        </div>
+
+        {user.tipo !== "ADMIN" && (
+          <div>
+            <Link
+              to="/perfil"
+              className="btn btn-outline-secondary shadow-sm px-4"
+            >
+              <i className="bi bi-person-lines-fill me-2"></i>Editar Perfil
+            </Link>
+          </div>
+        )}
       </div>
 
       {user.tipo === "PACIENTE" && renderPaciente()}
       {user.tipo === "MEDICO" && renderMedico()}
       {user.tipo === "ADMIN" && renderAdmin()}
 
-      <style>{`
-        .animation-fade-in { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+      <style>{`.animation-fade-in { animation: fadeIn 0.4s ease-in-out; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </main>
   );
 }

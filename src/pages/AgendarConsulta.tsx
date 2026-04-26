@@ -46,11 +46,17 @@ export function AgendarConsulta() {
   };
 
   const marcarConsulta = async (agendamentoId: string, dataStr: string) => {
-    const dataFormatada = new Date(dataStr).toLocaleString("pt-BR");
+    const dataObj = new Date(dataStr);
+    const diaFormatado = dataObj.toLocaleDateString("pt-BR");
+    const horaFormatada = dataObj.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const dataLimpa = `${diaFormatado} às ${horaFormatada}`;
 
     Swal.fire({
       title: "Confirmar Agendamento?",
-      html: `Você está agendando uma teleconsulta para<br><b>${dataFormatada}</b>`,
+      html: `Você está agendando uma teleconsulta para<br><b>${dataLimpa}</b>`,
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "var(--aa-green)",
@@ -132,7 +138,6 @@ export function AgendarConsulta() {
                     Infelizmente, este médico não possui horários abertos no
                     momento.
                   </p>
-
                   <button
                     className="btn btn-primary btn-lg px-4 shadow-sm"
                     onClick={demonstrarInteresse}
