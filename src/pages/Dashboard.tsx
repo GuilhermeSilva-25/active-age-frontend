@@ -298,7 +298,7 @@ export function Dashboard() {
                     className="btn btn-outline-danger shadow-sm"
                     onClick={() => handleCancelar(proxima.id)}
                   >
-                    Cancelar Consulta
+                    <i className="bi bi-x-circle me-2"></i>Cancelar Consulta
                   </button>
                 </div>
               </div>
@@ -352,7 +352,7 @@ export function Dashboard() {
                         className="btn btn-outline-danger px-4 shadow-sm fw-bold w-100"
                         onClick={() => handleCancelar(a.id)}
                       >
-                        <i className="bi bi-x-circle me-2"></i>Cancelar
+                        <i className="bi bi-x-circle me-2"></i>Cancelar Consulta
                       </button>
                     </div>
                   </div>
