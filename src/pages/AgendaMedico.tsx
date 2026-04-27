@@ -95,7 +95,7 @@ export function AgendaMedico() {
   const cancelarHorario = async (id: string) => {
     Swal.fire({
       title: "Cancelar horário?",
-      text: "Os pacientes não poderão mais agendar neste horário.",
+      text: "Os pacientes não poderão mais agendar neste horário. Ele será invalidado.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -110,10 +110,10 @@ export function AgendaMedico() {
             { method: "PUT" },
           );
           if (res.ok) {
-            setHorarios(horarios.filter((h) => h.id !== id));
+            setHorarios((prev) => prev.filter((h) => h.id !== id));
             Swal.fire(
               "Cancelado!",
-              "O horário foi removido da sua agenda.",
+              "O horário foi removido da sua agenda definitivamente.",
               "success",
             );
           }
@@ -131,7 +131,11 @@ export function AgendaMedico() {
       </div>
     );
 
-  const agendaAgrupada = horarios.reduce((acc: any, item) => {
+  const horariosValidos = horarios.filter(
+    (h) => h.status === "DISPONIVEL" || h.status === "AGENDADO",
+  );
+
+  const agendaAgrupada = horariosValidos.reduce((acc: any, item) => {
     const dataKey = new Date(item.dataHora).toLocaleDateString("pt-BR");
     if (!acc[dataKey]) acc[dataKey] = [];
     acc[dataKey].push(item);
@@ -215,7 +219,7 @@ export function AgendaMedico() {
                 <div className="alert alert-light border text-center py-4">
                   <i className="bi bi-inbox fs-1 text-muted opacity-50 mb-2"></i>
                   <p className="mb-0 text-muted">
-                    Você ainda não tem horários cadastrados.
+                    Você não possui horários livres ou agendamentos futuros.
                   </p>
                 </div>
               ) : (

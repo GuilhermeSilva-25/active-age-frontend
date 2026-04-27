@@ -187,12 +187,29 @@ export function Dashboard() {
       cancelButtonText: "Voltar",
     }).then(async (result) => {
       if (result.isConfirmed && user) {
-        const res = await fetch(
-          `http://localhost:8080/api/agendamentos/cancelar/${id}/usuario/${user.id}`,
-          { method: "PUT" },
-        );
-        if (res.ok) {
-          Swal.fire("Cancelado", "Consulta cancelada com sucesso.", "success");
+        setAgendamentos((prev) => prev.filter((a) => a.id !== id));
+
+        try {
+          const res = await fetch(
+            `http://localhost:8080/api/agendamentos/cancelar/${id}/usuario/${user.id}`,
+            { method: "PUT" },
+          );
+
+          if (res.ok) {
+            Swal.fire(
+              "Cancelado",
+              "Consulta cancelada com sucesso.",
+              "success",
+            );
+          } else {
+            carregarDados(user);
+            Swal.fire(
+              "Erro",
+              "Não foi possível cancelar no servidor.",
+              "error",
+            );
+          }
+        } catch (error) {
           carregarDados(user);
         }
       }
@@ -271,13 +288,12 @@ export function Dashboard() {
                   </p>
                 </div>
                 <div className="d-flex flex-column gap-2 align-items-stretch">
-                  <a
-                    href={proxima.linkTeleconsulta}
-                    target="_blank"
+                  <Link
+                    to={`/sala/${proxima.id}`}
                     className="btn btn-primary shadow-sm btn-lg fw-bold"
                   >
                     <i className="bi bi-camera-video me-2"></i>Entrar na Sala
-                  </a>
+                  </Link>
                   <button
                     className="btn btn-outline-danger shadow-sm"
                     onClick={() => handleCancelar(proxima.id)}
@@ -435,14 +451,13 @@ export function Dashboard() {
                                 >
                                   Cancelar
                                 </button>
-                                <a
-                                  href={a.linkTeleconsulta}
-                                  target="_blank"
+                                <Link
+                                  to={`/sala/${a.id}`}
                                   className="btn btn-primary px-4 shadow-sm fw-bold"
                                 >
                                   <i className="bi bi-camera-video me-2"></i>
                                   Iniciar
-                                </a>
+                                </Link>
                               </div>
                             </div>
                           </div>
@@ -500,8 +515,8 @@ export function Dashboard() {
                     Validação Obrigatória
                   </h2>
                   <p className="fs-5 text-muted mb-4">
-                    Confira os dados que serão enviados para a equipe de
-                    moderação avaliar e validar o seu registro médico (CRM).
+                    Confira os dados que serão enviados para a equipa de
+                    moderação avaliar e validar o seu registo médico (CRM).
                   </p>
                   <div
                     className="card bg-light border-0 shadow-sm text-start mx-auto mb-5"
@@ -549,7 +564,7 @@ export function Dashboard() {
                     Documentos em Análise
                   </h2>
                   <p className="fs-5 text-muted">
-                    Sua solicitação está sendo analisada pela equipe
+                    A sua solicitação está a ser analisada pela equipa
                     administrativa.
                   </p>
                 </>

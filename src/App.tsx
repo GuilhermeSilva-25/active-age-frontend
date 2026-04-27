@@ -15,6 +15,7 @@ import { Perfil } from "./pages/Perfil";
 import { BuscaMedicos } from "./pages/BuscaMedicos";
 import { AgendaMedico } from "./pages/AgendaMedico";
 import { AgendarConsulta } from "./pages/AgendarConsulta";
+import { SalaTeleconsulta } from "./pages/SalaTeleconsulta";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path="/busca" element={<BuscaMedicos />} />
         <Route path="/agenda-medico" element={<AgendaMedico />} />
         <Route path="/agendar/:medicoId" element={<AgendarConsulta />} />
+        <Route path="/sala/:agendamentoId" element={<SalaTeleconsulta />} />
       </Routes>
 
       <Footer />
