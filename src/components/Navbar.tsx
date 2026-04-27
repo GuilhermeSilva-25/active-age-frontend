@@ -35,16 +35,21 @@ export function Navbar() {
 
   const handleLogout = () => {
     Swal.fire({
-      title: "Saindo...",
-      text: "Até logo! Encerrando sua sessão.",
-      icon: "info",
-      timer: 1500,
-      showConfirmButton: false,
-    }).then(() => {
-      localStorage.removeItem("activeAgeToken");
-      localStorage.removeItem("activeAgeUser");
-      setIsLoggedIn(false);
-      navigate("/");
+      title: "Sair da conta?",
+      text: "Tem certeza que deseja encerrar a sua sessão?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Sim, sair",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("activeAgeToken");
+        localStorage.removeItem("activeAgeUser");
+        setIsLoggedIn(false);
+        navigate("/");
+      }
     });
   };
 
