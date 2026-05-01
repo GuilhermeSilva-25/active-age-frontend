@@ -63,7 +63,29 @@ export function AgendaMedico() {
       return;
     }
 
-    const dataHoraIso = `${dataNova}T${horaNova}:00`;
+    const novoHorarioIso = `${dataNova}T${horaNova}:00`;
+    const dataHoraNova = new Date(novoHorarioIso);
+
+    const temConflito = horarios.some((h) => {
+      if (h.status === "CANCELADO_PELO_MEDICO") return false;
+
+      const dataExistente = new Date(h.dataHora);
+      const diffEmMinutos = Math.abs(
+        (dataHoraNova.getTime() - dataExistente.getTime()) / (1000 * 60),
+      );
+
+      return diffEmMinutos < 40;
+    });
+
+    if (temConflito) {
+      Swal.fire({
+        title: "Conflito de Horário",
+        text: "Cada consulta deve ter um intervalo mínimo de 40 minutos entre si para garantir a qualidade do atendimento.",
+        icon: "error",
+        confirmButtonColor: "var(--aa-orange)",
+      });
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -71,7 +93,7 @@ export function AgendaMedico() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ horarios: [dataHoraIso] }),
+          body: JSON.stringify({ horarios: [novoHorarioIso] }),
         },
       );
 
@@ -85,7 +107,12 @@ export function AgendaMedico() {
         setHoraNova("");
         carregarAgenda(user!.id);
       } else {
-        Swal.fire("Erro", "Não foi possível salvar o horário.", "error");
+        const erroMsg = await response.json().catch(() => null);
+        Swal.fire(
+          "Erro",
+          erroMsg?.message || "Não foi possível salvar o horário.",
+          "error",
+        );
       }
     } catch (error) {
       Swal.fire("Erro", "Servidor offline.", "error");
@@ -95,7 +122,7 @@ export function AgendaMedico() {
   const cancelarHorario = async (id: string) => {
     Swal.fire({
       title: "Cancelar horário?",
-      text: "Os pacientes não poderão mais agendar neste horário. Ele será invalidado.",
+      text: "Os pacientes não poderão mais agendar neste horário. Ele será removido da sua agenda.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -113,7 +140,7 @@ export function AgendaMedico() {
             setHorarios((prev) => prev.filter((h) => h.id !== id));
             Swal.fire(
               "Cancelado!",
-              "O horário foi removido da sua agenda definitivamente.",
+              "O horário foi removido com sucesso.",
               "success",
             );
           }
@@ -195,9 +222,9 @@ export function AgendaMedico() {
                 </div>
                 <button
                   type="submit"
-                  className="btn btn-primary w-100 fw-bold shadow-sm"
+                  className="btn btn-primary w-100 fw-bold shadow-sm py-2"
                 >
-                  Adicionar à Agenda
+                  <i className="bi bi-calendar-plus me-2"></i>Adicionar à Agenda
                 </button>
               </form>
             </div>
@@ -239,7 +266,11 @@ export function AgendaMedico() {
                           <div
                             key={h.id}
                             className={`p-3 border shadow-sm d-flex flex-column align-items-center justify-content-center position-relative ${h.status === "AGENDADO" ? "bg-primary text-white border-primary" : "bg-white text-dark"}`}
-                            style={{ borderRadius: "12px", minWidth: "110px" }}
+                            style={{
+                              borderRadius: "12px",
+                              minWidth: "110px",
+                              transition: "all 0.2s",
+                            }}
                           >
                             <span className="fw-bold fs-5">
                               {new Date(h.dataHora).toLocaleTimeString(
@@ -252,7 +283,7 @@ export function AgendaMedico() {
                             </span>
                             <button
                               onClick={() => cancelarHorario(h.id)}
-                              className="btn btn-sm text-danger position-absolute top-0 end-0 p-1"
+                              className={`btn btn-sm position-absolute top-0 end-0 p-1 ${h.status === "AGENDADO" ? "text-white" : "text-danger"}`}
                               title="Cancelar"
                             >
                               <i className="bi bi-x-circle-fill"></i>
