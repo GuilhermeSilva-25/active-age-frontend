@@ -107,72 +107,45 @@ export function SalaTeleconsulta() {
     }
   };
 
-  const handleFinalizarConsulta = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (user.tipo !== "MEDICO") return;
+  const gerarAtestadoTexto = () => {
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    const cpfStr = ` CPF nº ${agendamento?.pacienteCpf || "Não cadastrado"}`;
+    const afastamentoStr = atestadoPeriodo
+      ? ` e deverá se afastar de suas atividades pelo período de ${atestadoPeriodo} ${atestadoTipoPeriodo}`
+      : "";
+    let atestadoFinal = `Atesto para os devidos fins que o(a) paciente ${agendamento?.pacienteNome || "Não identificado"}, portador(a) do${cpfStr}, esteve sob cuidados médicos no dia ${hoje}${afastamentoStr}.\n`;
+    if (atestadoMotivo) atestadoFinal += `\nMotivo: ${atestadoMotivo}`;
+    atestadoFinal += `\nCID: ${atestadoCid}`;
+    return atestadoFinal;
+  };
 
-    if (!queixa.trim() || !diagnostico.trim() || !conduta.trim()) {
-      Swal.fire(
-        "Atenção",
-        "Preencha a Queixa, Diagnóstico e Conduta na aba Prontuário para poder assinar o documento.",
-        "warning",
-      );
-      setActiveTab("PRONTUARIO");
-      return;
-    }
-
-    const vaiEmitirAtestado = atestadoPeriodo || atestadoMotivo || atestadoCid;
-    if (vaiEmitirAtestado && !atestadoCid.trim()) {
-      Swal.fire(
-        "CID Obrigatório",
-        "O preenchimento do CID é obrigatório para a emissão do atestado médico.",
-        "warning",
-      );
-      setActiveTab("ATESTADO");
-      return;
-    }
-
+  const salvarAbaAtual = async (dados: any, msgSucesso: string) => {
     setIsSaving(true);
-
-    let atestadoFinal = "";
-    if (vaiEmitirAtestado) {
-      const hoje = new Date().toLocaleDateString("pt-BR");
-      const cpfStr = ` CPF nº ${agendamento?.pacienteCpf || "Não cadastrado"}`;
-      const afastamentoStr = atestadoPeriodo
-        ? ` e deverá se afastar de suas atividades pelo período de ${atestadoPeriodo} ${atestadoTipoPeriodo}`
-        : "";
-
-      atestadoFinal = `Atesto para os devidos fins que o(a) paciente ${agendamento?.pacienteNome || "Não identificado"}, portador(a) do${cpfStr}, esteve sob cuidados médicos no dia ${hoje}${afastamentoStr}.\n`;
-
-      if (atestadoMotivo) atestadoFinal += `\nMotivo: ${atestadoMotivo}`;
-      atestadoFinal += `\nCID: ${atestadoCid}`;
-    }
-
     try {
       const res = await fetch(
         `http://localhost:8080/api/prontuarios/medico/${user.id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            agendamentoId,
-            queixaPrincipal: queixa,
-            diagnostico,
-            conduta,
-            receita,
-            atestado: atestadoFinal,
-            pedidoExames,
-          }),
+          body: JSON.stringify({ agendamentoId, ...dados }),
         },
       );
 
       if (res.ok) {
-        Swal.fire({
-          icon: "success",
-          title: "Documentos Assinados!",
-          text: "O prontuário e os anexos foram assinados digitalmente (CFM).",
-          confirmButtonColor: "var(--aa-green)",
-        }).then(() => navigate("/dashboard"));
+        if (dados.finalizar) {
+          Swal.fire("Sucesso!", msgSucesso, "success").then(() =>
+            navigate("/dashboard"),
+          );
+        } else {
+          Swal.fire({
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            icon: "success",
+            title: msgSucesso,
+          });
+        }
       } else {
         const error = await res.json();
         Swal.fire("Erro", error.message || "Não foi possível salvar.", "error");
@@ -184,13 +157,67 @@ export function SalaTeleconsulta() {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (activeTab === "PRONTUARIO") {
+      if (!queixa.trim() || !diagnostico.trim() || !conduta.trim()) {
+        Swal.fire(
+          "Atenção",
+          "Preencha a Queixa, Diagnóstico e Conduta para finalizar.",
+          "warning",
+        );
+        return;
+      }
+      Swal.fire({
+        title: "Finalizar Consulta?",
+        text: "Isso assinará o prontuário e encerrará o atendimento.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "var(--aa-green)",
+        confirmButtonText: "Sim, Finalizar",
+        cancelButtonText: "Voltar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          salvarAbaAtual(
+            { queixaPrincipal: queixa, diagnostico, conduta, finalizar: true },
+            "Atendimento finalizado!",
+          );
+        }
+      });
+    } else if (activeTab === "RECEITA") {
+      salvarAbaAtual(
+        { receita, finalizar: false },
+        "Receita salva e assinada!",
+      );
+    } else if (activeTab === "ATESTADO") {
+      if (!atestadoCid.trim()) {
+        Swal.fire(
+          "Atenção",
+          "O CID é obrigatório para emitir o atestado.",
+          "warning",
+        );
+        return;
+      }
+      salvarAbaAtual(
+        { atestado: gerarAtestadoTexto(), finalizar: false },
+        "Atestado salvo e assinado!",
+      );
+    } else if (activeTab === "PEDIDOS_EXAME") {
+      salvarAbaAtual(
+        { pedidoExames, finalizar: false },
+        "Pedidos de exames salvos!",
+      );
+    }
+  };
+
   const sairDaSala = () => {
     Swal.fire({
       title: "Sair da Consulta?",
       text:
         user?.tipo === "MEDICO"
-          ? "Atenção: Os documentos não serão guardados se sair agora."
-          : "Pode sair, mas a consulta só desaparecerá do painel quando o médico preencher o Prontuário.",
+          ? "Atenção: A consulta não será encerrada até que preencha o Prontuário."
+          : "Pode sair, mas a consulta só desaparecerá quando o médico preencher o Prontuário.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc3545",
@@ -230,8 +257,9 @@ export function SalaTeleconsulta() {
                 ID:{" "}
                 <strong>#{agendamento.id.substring(0, 8).toUpperCase()}</strong>
               </p>
+
               <div
-                className="bg-dark text-white rounded-4 p-5 mb-4 w-100 position-relative d-flex flex-column justify-content-center align-items-center shadow-inner"
+                className="bg-dark text-white rounded-4 mb-4 w-100 position-relative d-flex flex-column justify-content-center align-items-center shadow-inner overflow-hidden"
                 style={{
                   minHeight: "350px",
                   border: "4px solid var(--aa-green)",
@@ -241,9 +269,12 @@ export function SalaTeleconsulta() {
                   <div className="spinner-grow text-danger spinner-grow-sm me-2"></div>
                   <span className="badge bg-danger">AO VIVO</span>
                 </div>
-                <i className="bi bi-person-video display-1 mb-3 text-muted"></i>
-                <h2 className="h4">Aguardando câmera...</h2>
+                <div className="text-center my-auto d-flex flex-column align-items-center">
+                  <i className="bi bi-person-video display-1 mb-3 text-muted d-block"></i>
+                  <h2 className="h4 mb-0">Aguardando câmera...</h2>
+                </div>
               </div>
+
               <div className="mb-4 p-3 bg-light rounded border text-start shadow-sm w-100">
                 {user?.tipo === "MEDICO" ? (
                   <>
@@ -351,7 +382,7 @@ export function SalaTeleconsulta() {
                 }}
               >
                 <form
-                  onSubmit={handleFinalizarConsulta}
+                  onSubmit={handleSubmit}
                   className="d-flex flex-column h-100"
                 >
                   <div className="flex-grow-1 overflow-auto p-4 animation-fade-in custom-scrollbar">
@@ -573,28 +604,53 @@ export function SalaTeleconsulta() {
                       </div>
                     )}
                   </div>
-                  <div
-                    className="p-3 border-top bg-white d-grid flex-shrink-0"
-                    style={{
-                      borderBottomLeftRadius: "15px",
-                      borderBottomRightRadius: "15px",
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      className="btn btn-success btn-lg py-3 fw-bold shadow-sm"
-                      disabled={isSaving}
+
+                  {activeTab !== "EXAMES" && (
+                    <div
+                      className="p-3 border-top bg-white d-grid flex-shrink-0"
+                      style={{
+                        borderBottomLeftRadius: "15px",
+                        borderBottomRightRadius: "15px",
+                      }}
                     >
-                      {isSaving ? (
-                        "A Processar Assinatura..."
-                      ) : (
-                        <>
-                          <i className="bi bi-pen-fill me-2"></i>Assinar
-                          Digitalmente e Finalizar
-                        </>
-                      )}
-                    </button>
-                  </div>
+                      <button
+                        type="submit"
+                        className={`btn btn-lg py-3 fw-bold shadow-sm ${activeTab === "PRONTUARIO" ? "btn-success" : "btn-primary"}`}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? (
+                          "A Processar..."
+                        ) : (
+                          <>
+                            {activeTab === "PRONTUARIO" && (
+                              <>
+                                <i className="bi bi-check-circle-fill me-2"></i>
+                                Assinar e Finalizar Atendimento
+                              </>
+                            )}
+                            {activeTab === "RECEITA" && (
+                              <>
+                                <i className="bi bi-pen-fill me-2"></i>Assinar e
+                                Salvar Receita
+                              </>
+                            )}
+                            {activeTab === "ATESTADO" && (
+                              <>
+                                <i className="bi bi-pen-fill me-2"></i>Assinar e
+                                Salvar Atestado
+                              </>
+                            )}
+                            {activeTab === "PEDIDOS_EXAME" && (
+                              <>
+                                <i className="bi bi-pen-fill me-2"></i>Assinar e
+                                Salvar Pedidos
+                              </>
+                            )}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </form>
               </div>
             </div>
