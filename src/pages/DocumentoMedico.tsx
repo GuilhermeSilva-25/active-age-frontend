@@ -177,12 +177,21 @@ export function DocumentoMedico() {
         <footer className="mt-auto">
           <div
             className="d-flex align-items-center"
-            style={{ borderTop: "2px solid #000", paddingTop: "15px" }}
+            style={{
+              borderTop: "2px solid #000",
+              paddingTop: "15px",
+              backgroundColor: "#ffffff",
+            }}
           >
             <img
               src={qrCodeUrl}
               alt="QR Code Assinatura"
-              style={{ width: "120px", height: "120px" }}
+              style={{
+                width: "120px",
+                height: "120px",
+                backgroundColor: "#ffffff",
+                padding: "2px",
+              }}
               className="me-3"
             />
             <div
@@ -191,6 +200,8 @@ export function DocumentoMedico() {
                 lineHeight: "1.2",
                 color: "#000",
                 textAlign: "justify",
+                backgroundColor: "#ffffff",
+                padding: "5px",
               }}
             >
               Documento assinado digitalmente de acordo com a ICP-Brasil, MP
