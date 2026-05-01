@@ -8,6 +8,7 @@ interface Agendamento {
   medicoNome?: string;
   pacienteNome?: string;
   pacienteId?: string;
+  pacienteCpf?: string;
   status: string;
 }
 
@@ -40,8 +41,12 @@ export function SalaTeleconsulta() {
   const [conduta, setConduta] = useState("");
 
   const [receita, setReceita] = useState("");
-  const [atestado, setAtestado] = useState("");
   const [pedidoExames, setPedidoExames] = useState("");
+
+  const [atestadoPeriodo, setAtestadoPeriodo] = useState("");
+  const [atestadoTipoPeriodo, setAtestadoTipoPeriodo] = useState("dias");
+  const [atestadoMotivo, setAtestadoMotivo] = useState("");
+  const [atestadoCid, setAtestadoCid] = useState("");
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -73,11 +78,6 @@ export function SalaTeleconsulta() {
 
         if (consultaAtual) {
           setAgendamento(consultaAtual);
-
-          const hoje = new Date().toLocaleDateString("pt-BR");
-          const templateAtestado = `Atesto para ____________________________________________________________________\nque o Sr. (a) ${consultaAtual.pacienteNome || "_________________________________________________________"}\nportador da Carteira de identidade nº _____________________ esteve sob\ncuidados médicos no dia ${hoje} e deverá se afastar\nde suas atividades pelo período de _________ dias até _______________\npor motivos de ____________________________________________________.\n\n\nINFORMAÇÕES RELEVANTES:\n\n\n\nCID:_________ \n\n\nLocal: _________________________________    Data: ${hoje}`;
-
-          setAtestado(templateAtestado);
 
           if (usuarioLogado.tipo === "MEDICO" && consultaAtual.pacienteId) {
             carregarExamesDoPaciente(consultaAtual.pacienteId);
@@ -121,7 +121,33 @@ export function SalaTeleconsulta() {
       return;
     }
 
+    const vaiEmitirAtestado = atestadoPeriodo || atestadoMotivo || atestadoCid;
+    if (vaiEmitirAtestado && !atestadoCid.trim()) {
+      Swal.fire(
+        "CID Obrigatório",
+        "O preenchimento do CID é obrigatório para a emissão do atestado médico.",
+        "warning",
+      );
+      setActiveTab("ATESTADO");
+      return;
+    }
+
     setIsSaving(true);
+
+    let atestadoFinal = "";
+    if (vaiEmitirAtestado) {
+      const hoje = new Date().toLocaleDateString("pt-BR");
+      const cpfStr = ` CPF nº ${agendamento?.pacienteCpf || "Não cadastrado"}`;
+      const afastamentoStr = atestadoPeriodo
+        ? ` e deverá se afastar de suas atividades pelo período de ${atestadoPeriodo} ${atestadoTipoPeriodo}`
+        : "";
+
+      atestadoFinal = `Atesto para os devidos fins que o(a) paciente ${agendamento?.pacienteNome || "Não identificado"}, portador(a) do${cpfStr}, esteve sob cuidados médicos no dia ${hoje}${afastamentoStr}.\n`;
+
+      if (atestadoMotivo) atestadoFinal += `\nMotivo: ${atestadoMotivo}`;
+      atestadoFinal += `\nCID: ${atestadoCid}`;
+    }
+
     try {
       const res = await fetch(
         `http://localhost:8080/api/prontuarios/medico/${user.id}`,
@@ -134,7 +160,7 @@ export function SalaTeleconsulta() {
             diagnostico,
             conduta,
             receita,
-            atestado,
+            atestado: atestadoFinal,
             pedidoExames,
           }),
         },
@@ -393,20 +419,94 @@ export function SalaTeleconsulta() {
                     {activeTab === "ATESTADO" && (
                       <div className="d-flex flex-column h-100">
                         <div className="alert alert-info py-2 small fw-semibold shadow-sm">
-                          <i className="bi bi-info-circle-fill me-2"></i>
-                          Atestado Padrão. Preencha apenas os espaços.
+                          <i className="bi bi-magic me-2"></i>Os dados do
+                          paciente são puxados automaticamente do cadastro para
+                          o documento.
                         </div>
-                        <div className="mb-3 flex-grow-1 d-flex flex-column">
-                          <textarea
-                            className="form-control bg-white flex-grow-1"
-                            style={{
-                              minHeight: "250px",
-                              fontSize: "1rem",
-                              lineHeight: "1.5",
-                            }}
-                            value={atestado}
-                            onChange={(e) => setAtestado(e.target.value)}
-                          ></textarea>
+
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold small text-muted">
+                              Nome do Paciente
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control bg-light fw-semibold"
+                              value={agendamento?.pacienteNome || ""}
+                              disabled
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold small text-muted">
+                              <i className="bi bi-lock-fill me-1"></i>CPF do
+                              Paciente (Automático)
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control bg-light fw-semibold"
+                              value={
+                                agendamento?.pacienteCpf || "Carregando CPF..."
+                              }
+                              disabled
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold small text-muted">
+                              Tempo de Afastamento
+                            </label>
+                            <div className="input-group">
+                              <input
+                                type="number"
+                                className="form-control bg-white"
+                                value={atestadoPeriodo}
+                                onChange={(e) =>
+                                  setAtestadoPeriodo(e.target.value)
+                                }
+                                placeholder="Ex: 3"
+                              />
+                              <select
+                                className="form-select bg-white"
+                                style={{ maxWidth: "110px" }}
+                                value={atestadoTipoPeriodo}
+                                onChange={(e) =>
+                                  setAtestadoTipoPeriodo(e.target.value)
+                                }
+                              >
+                                <option value="dias">Dias</option>
+                                <option value="horas">Horas</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold small text-muted">
+                              CID <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control bg-white"
+                              required
+                              value={atestadoCid}
+                              onChange={(e) => setAtestadoCid(e.target.value)}
+                              placeholder="Ex: J01.9 (Obrigatório)"
+                            />
+                          </div>
+
+                          <div className="col-12 flex-grow-1 d-flex flex-column">
+                            <label className="form-label fw-bold small text-muted">
+                              Motivo / Observações Clínicas
+                            </label>
+                            <textarea
+                              className="form-control bg-white flex-grow-1"
+                              style={{ minHeight: "100px" }}
+                              value={atestadoMotivo}
+                              onChange={(e) =>
+                                setAtestadoMotivo(e.target.value)
+                              }
+                              placeholder="Ex: Necessita de repouso absoluto..."
+                            ></textarea>
+                          </div>
                         </div>
                       </div>
                     )}
