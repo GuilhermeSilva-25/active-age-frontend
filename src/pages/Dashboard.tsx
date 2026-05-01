@@ -278,11 +278,12 @@ export function Dashboard() {
                     {proxima.medicoNome || "Profissional não identificado"}
                   </h5>
                   <p className="mb-2 text-muted small fw-semibold">
+                    <i className="bi bi-star-fill text-warning me-1"></i>
                     {proxima.medicoEspecializacao || "Geriatria"} | CRM:{" "}
                     {proxima.medicoCrm || "N/A"}
                   </p>
-                  <p className="mb-0 text-dark fw-bold fs-5">
-                    <i className="bi bi-calendar3 text-primary me-2"></i>
+                  <p className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill">
+                    <i className="bi bi-clock-fill text-primary me-2"></i>
                     {formatarDataHora(proxima.dataHora).dia} às{" "}
                     {formatarDataHora(proxima.dataHora).hora}
                   </p>
@@ -349,7 +350,7 @@ export function Dashboard() {
                     </div>
                     <div>
                       <button
-                        className="btn btn-outline-danger px-4 shadow-sm fw-bold w-100"
+                        className="btn btn-outline-danger px-4 shadow-sm  w-100"
                         onClick={() => handleCancelar(a.id)}
                       >
                         <i className="bi bi-x-circle me-2"></i>Cancelar Consulta
@@ -369,7 +370,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="col-lg-4 align-self-start">
+      <div className="col-lg-4 align-self-start d-flex flex-column gap-4">
         <Link to="/busca" className="text-decoration-none">
           <div
             className="card shadow-sm border-0 service-feature bg-white"
@@ -384,6 +385,24 @@ export function Dashboard() {
                 Agendar Consulta
               </h4>
               <p className="text-muted mb-0">Encontre especialistas.</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/exames" className="text-decoration-none">
+          <div
+            className="card shadow-sm border-0 service-feature bg-white"
+            style={{
+              borderRadius: "15px",
+              borderBottom: "5px solid var(--aa-orange)",
+            }}
+          >
+            <div className="card-body text-center p-4">
+              <i className="bi bi-folder-plus display-4 text-primary"></i>
+              <h4 style={{ color: "var(--aa-brown)" }} className="mt-3">
+                Meus Exames
+              </h4>
+              <p className="text-muted mb-0">Faça upload de exames antigos.</p>
             </div>
           </div>
         </Link>
