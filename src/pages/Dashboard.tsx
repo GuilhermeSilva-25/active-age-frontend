@@ -188,13 +188,11 @@ export function Dashboard() {
     }).then(async (result) => {
       if (result.isConfirmed && user) {
         setAgendamentos((prev) => prev.filter((a) => a.id !== id));
-
         try {
           const res = await fetch(
             `http://localhost:8080/api/agendamentos/cancelar/${id}/usuario/${user.id}`,
             { method: "PUT" },
           );
-
           if (res.ok) {
             Swal.fire(
               "Cancelado",
@@ -236,6 +234,92 @@ export function Dashboard() {
     };
   };
 
+  const renderHistoricoClinico = () => {
+    const historico = agendamentos
+      .filter((a) => a.status === "CONCLUIDO")
+      .sort(
+        (a, b) =>
+          new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime(),
+      );
+
+    if (historico.length === 0) return null;
+
+    return (
+      <div
+        className="card shadow-sm border-0 mt-4"
+        style={{ borderRadius: "15px" }}
+      >
+        <div className="card-body p-4">
+          <h5 style={{ color: "var(--aa-brown)" }} className="mb-4">
+            <i className="bi bi-clock-history me-2"></i>Histórico de
+            Atendimentos
+          </h5>
+          <div className="d-flex flex-column gap-3">
+            {historico.map((a) => (
+              <div
+                key={a.id}
+                className="p-4 border shadow-sm bg-white d-flex flex-column gap-3 border-start border-4 border-success"
+                style={{ borderRadius: "12px" }}
+              >
+                <div className="border-bottom pb-2">
+                  <h6 className="fw-bold mb-1 text-dark">
+                    Consulta em{" "}
+                    {new Date(a.dataHora).toLocaleDateString("pt-BR")}
+                  </h6>
+                  <div className="text-muted small fw-semibold">
+                    {user?.tipo === "PACIENTE" ? (
+                      <>
+                        <i className="bi bi-hospital me-1"></i> Médico:{" "}
+                        {a.medicoNome}
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-person me-1"></i> Paciente:{" "}
+                        {a.pacienteNome}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="small text-muted fw-bold mb-2">
+                    Documentos Gerados:
+                  </p>
+                  <div className="d-flex flex-wrap gap-2">
+                    <Link
+                      to={`/documento/${a.id}/prontuario`}
+                      className="btn btn-sm btn-outline-primary fw-bold"
+                    >
+                      <i className="bi bi-file-medical me-1"></i> Prontuário
+                    </Link>
+                    <Link
+                      to={`/documento/${a.id}/receita`}
+                      className="btn btn-sm btn-outline-success fw-bold"
+                    >
+                      <i className="bi bi-capsule me-1"></i> Receita
+                    </Link>
+                    <Link
+                      to={`/documento/${a.id}/atestado`}
+                      className="btn btn-sm btn-outline-warning text-dark fw-bold"
+                    >
+                      <i className="bi bi-file-earmark-text me-1"></i> Atestado
+                    </Link>
+                    <Link
+                      to={`/documento/${a.id}/pedidos`}
+                      className="btn btn-sm btn-outline-info text-dark fw-bold"
+                    >
+                      <i className="bi bi-clipboard2-pulse me-1"></i> Pedidos
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading || !user)
     return (
       <div className="text-center py-5">
@@ -250,7 +334,6 @@ export function Dashboard() {
     .sort(
       (a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime(),
     );
-
   const proxima =
     agendamentosFuturos.length > 0 ? agendamentosFuturos[0] : null;
   const outrasConsultas = agendamentosFuturos.filter(
@@ -350,7 +433,7 @@ export function Dashboard() {
                     </div>
                     <div>
                       <button
-                        className="btn btn-outline-danger px-4 shadow-sm  w-100"
+                        className="btn btn-outline-danger px-4 shadow-sm w-100"
                         onClick={() => handleCancelar(a.id)}
                       >
                         <i className="bi bi-x-circle me-2"></i>Cancelar Consulta
@@ -368,6 +451,8 @@ export function Dashboard() {
             )}
           </div>
         </div>
+
+        {renderHistoricoClinico()}
       </div>
 
       <div className="col-lg-4 align-self-start d-flex flex-column gap-4">
@@ -388,7 +473,6 @@ export function Dashboard() {
             </div>
           </div>
         </Link>
-
         <Link to="/exames" className="text-decoration-none">
           <div
             className="card shadow-sm border-0 service-feature bg-white"
@@ -418,7 +502,7 @@ export function Dashboard() {
         <div className="row g-4 animation-fade-in">
           <div className="col-lg-8">
             <div
-              className="card shadow-sm border-0 h-100"
+              className="card shadow-sm border-0 mb-4"
               style={{ borderRadius: "15px" }}
             >
               <div className="card-body p-4">
@@ -426,7 +510,6 @@ export function Dashboard() {
                   <i className="bi bi-calendar-check me-2"></i>Meus Próximos
                   Atendimentos
                 </h4>
-
                 {agendamentos.filter((a) => a.status === "AGENDADO").length >
                 0 ? (
                   <div className="d-flex flex-column gap-3">
@@ -461,7 +544,6 @@ export function Dashboard() {
                                 </span>
                               </div>
                             </div>
-
                             <div className="col-md-6">
                               <div className="d-grid d-sm-flex justify-content-md-end gap-2">
                                 <button
@@ -493,6 +575,8 @@ export function Dashboard() {
                 )}
               </div>
             </div>
+
+            {renderHistoricoClinico()}
           </div>
           <div className="col-lg-4 d-flex flex-column gap-4 align-self-start">
             <Link to="/agenda-medico" className="text-decoration-none">
