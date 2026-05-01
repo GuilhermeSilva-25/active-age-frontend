@@ -208,13 +208,21 @@ export function BuscaMedicos() {
                       style={{ color: `var(--aa-green)` }}
                     >
                       <i className="bi bi-star-fill text-warning me-1"></i>{" "}
-                      {medico.especializacao}
+                      {medico.especializacao || "Geriatria"}
                     </p>
                     <span className="badge bg-light text-dark border mb-4 mx-auto p-2 w-75">
                       CRM: {medico.crm}
                     </span>
 
-                    <div className="mt-auto">
+                    <div className="mt-auto d-flex flex-column gap-2">
+                      <Link
+                        to={`/medico/${medico.id}`}
+                        className="btn btn-outline-secondary w-100 py-2 fw-bold shadow-sm"
+                      >
+                        <i className="bi bi-person-badge me-2"></i> Ver Perfil
+                        Profissional
+                      </Link>
+
                       {temVaga ? (
                         <Link
                           to={`/agendar/${medico.id}`}

@@ -21,6 +21,9 @@ interface Agendamento {
   medicoCrm?: string;
   medicoEspecializacao?: string;
   pacienteNome?: string;
+  medicoId?: string;
+  notaAvaliacao?: number;
+  comentarioAvaliacao?: string;
 }
 
 export function Dashboard() {
@@ -107,7 +110,7 @@ export function Dashboard() {
     }
   };
 
-  const enviarAvaliacao = async (
+  const enviarAvaliacaoSistema = async (
     id: string,
     nome: string,
     status: string,
@@ -147,7 +150,7 @@ export function Dashboard() {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed)
-        enviarAvaliacao(id, nome, "APROVADO", "Aprovado com sucesso.");
+        enviarAvaliacaoSistema(id, nome, "APROVADO", "Aprovado com sucesso.");
     });
   };
 
@@ -169,7 +172,7 @@ export function Dashboard() {
       },
     }).then((result) => {
       if (result.isConfirmed)
-        enviarAvaliacao(id, nome, "REPROVADO", result.value);
+        enviarAvaliacaoSistema(id, nome, "REPROVADO", result.value);
     });
   };
 
@@ -212,6 +215,60 @@ export function Dashboard() {
         }
       }
     });
+  };
+
+  const avaliarConsulta = async (agendamentoId: string, medicoNome: string) => {
+    const { value: formValues } = await Swal.fire({
+      title: `Avaliar Dr(a). ${medicoNome}`,
+      html: `
+        <div class="mb-3 text-start">
+          <label class="form-label fw-bold small">Sua Nota (1 a 5)</label>
+          <select id="swal-nota" class="form-select border-warning">
+            <option value="5">⭐⭐⭐⭐⭐ (5) Excelente</option>
+            <option value="4">⭐⭐⭐⭐ (4) Muito Bom</option>
+            <option value="3">⭐⭐⭐ (3) Bom</option>
+            <option value="2">⭐⭐ (2) Regular</option>
+            <option value="1">⭐ (1) Ruim</option>
+          </select>
+        </div>
+        <div class="text-start">
+          <label class="form-label fw-bold small">Seu Comentário</label>
+          <textarea id="swal-comentario" class="form-control" rows="3" placeholder="Como foi o atendimento?..."></textarea>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonColor: "var(--aa-green)",
+      confirmButtonText: "Enviar Avaliação",
+      cancelButtonText: "Cancelar",
+      preConfirm: () => {
+        const nota = (document.getElementById("swal-nota") as HTMLSelectElement)
+          .value;
+        const comentario = (
+          document.getElementById("swal-comentario") as HTMLTextAreaElement
+        ).value;
+        return { nota: parseInt(nota), comentario };
+      },
+    });
+
+    if (formValues && user) {
+      try {
+        const res = await fetch(
+          `http://localhost:8080/api/agendamentos/${agendamentoId}/avaliar`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formValues),
+          },
+        );
+        if (res.ok) {
+          Swal.fire("Sucesso!", "Sua avaliação foi publicada.", "success");
+          carregarDados(user); // Recarrega para mostrar as estrelinhas no histórico!
+        }
+      } catch (error) {
+        Swal.fire("Erro", "Não foi possível enviar a avaliação.", "error");
+      }
+    }
   };
 
   const getPrimeiroNome = (n: string) => {
@@ -261,24 +318,54 @@ export function Dashboard() {
                 className="p-4 border shadow-sm bg-white d-flex flex-column gap-3 border-start border-4 border-success"
                 style={{ borderRadius: "12px" }}
               >
-                <div className="border-bottom pb-2">
-                  <h6 className="fw-bold mb-1 text-dark">
-                    Consulta em{" "}
-                    {new Date(a.dataHora).toLocaleDateString("pt-BR")}
-                  </h6>
-                  <div className="text-muted small fw-semibold">
-                    {user?.tipo === "PACIENTE" ? (
-                      <>
-                        <i className="bi bi-hospital me-1"></i> Médico:{" "}
-                        {a.medicoNome}
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-person me-1"></i> Paciente:{" "}
-                        {a.pacienteNome}
-                      </>
-                    )}
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-start border-bottom pb-3 gap-3">
+                  <div>
+                    <h6 className="fw-bold mb-1 text-dark">
+                      Consulta em{" "}
+                      {new Date(a.dataHora).toLocaleDateString("pt-BR")}
+                    </h6>
+                    <div className="text-muted small fw-semibold">
+                      {user?.tipo === "PACIENTE" ? (
+                        <>
+                          <i className="bi bi-hospital me-1"></i> Médico:{" "}
+                          {a.medicoNome}
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-person me-1"></i> Paciente:{" "}
+                          {a.pacienteNome}
+                        </>
+                      )}
+                    </div>
                   </div>
+
+                  {user?.tipo === "PACIENTE" && a.medicoId && (
+                    <div className="d-flex flex-column align-items-end gap-2">
+                      <Link
+                        to={`/medico/${a.medicoId}`}
+                        className="btn btn-sm btn-outline-secondary fw-bold shadow-sm"
+                      >
+                        <i className="bi bi-person-badge me-1"></i> Ver Perfil
+                        do Médico
+                      </Link>
+                      {!a.notaAvaliacao ? (
+                        <button
+                          className="btn btn-sm btn-warning shadow-sm fw-bold text-dark"
+                          onClick={() => avaliarConsulta(a.id, a.medicoNome!)}
+                        >
+                          <i className="bi bi-star-fill me-1"></i> Avaliar
+                          Consulta
+                        </button>
+                      ) : (
+                        <span
+                          className="badge bg-light text-warning border border-warning fs-6 shadow-sm"
+                          title={`Você avaliou com ${a.notaAvaliacao} estrelas.`}
+                        >
+                          {"⭐".repeat(a.notaAvaliacao)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -288,25 +375,25 @@ export function Dashboard() {
                   <div className="d-flex flex-wrap gap-2">
                     <Link
                       to={`/documento/${a.id}/prontuario`}
-                      className="btn btn-sm btn-outline-primary fw-bold"
+                      className="btn btn-sm btn-outline-primary fw-bold shadow-sm"
                     >
                       <i className="bi bi-file-medical me-1"></i> Prontuário
                     </Link>
                     <Link
                       to={`/documento/${a.id}/receita`}
-                      className="btn btn-sm btn-outline-success fw-bold"
+                      className="btn btn-sm btn-outline-success fw-bold shadow-sm"
                     >
                       <i className="bi bi-capsule me-1"></i> Receita
                     </Link>
                     <Link
                       to={`/documento/${a.id}/atestado`}
-                      className="btn btn-sm btn-outline-warning text-dark fw-bold"
+                      className="btn btn-sm btn-outline-warning text-dark fw-bold shadow-sm"
                     >
                       <i className="bi bi-file-earmark-text me-1"></i> Atestado
                     </Link>
                     <Link
                       to={`/documento/${a.id}/pedidos`}
-                      className="btn btn-sm btn-outline-info text-dark fw-bold"
+                      className="btn btn-sm btn-outline-info text-dark fw-bold shadow-sm"
                     >
                       <i className="bi bi-clipboard2-pulse me-1"></i> Pedidos
                     </Link>

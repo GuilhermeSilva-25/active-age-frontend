@@ -23,6 +23,7 @@ interface Usuario {
   tipo: "PACIENTE" | "MEDICO" | "ADMIN";
   crm?: string;
   especializacao?: string;
+  biografia?: string; // NOVO CAMPO: Biografia
   statusValidacao?: "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REPROVADO";
   mensagemValidacao?: string;
 }
@@ -38,6 +39,7 @@ export function Perfil() {
   const [crm, setCrm] = useState("");
   const [especialidades, setEspecialidades] = useState<string[]>([]);
   const [email, setEmail] = useState("");
+  const [biografia, setBiografia] = useState(""); // NOVO ESTADO
 
   const isCrmBloqueado =
     user?.tipo === "MEDICO" &&
@@ -58,6 +60,7 @@ export function Perfil() {
     setEmail(usuarioLogado.email || "");
     setTelefone(usuarioLogado.telefone || "");
     setCrm(usuarioLogado.crm || "");
+    setBiografia(usuarioLogado.biografia || ""); // CARREGA A BIOGRAFIA
 
     if (usuarioLogado.especializacao) {
       const splitted = usuarioLogado.especializacao
@@ -123,6 +126,7 @@ export function Perfil() {
       telefone: telefoneLimpo,
       crm: user?.tipo === "MEDICO" && !isCrmBloqueado ? crm : undefined,
       especializacao: especialidades.join(", "),
+      biografia: user?.tipo === "MEDICO" ? biografia : undefined, // ENVIA A BIOGRAFIA
     };
 
     try {
@@ -255,6 +259,7 @@ export function Perfil() {
                       />
                       <label>CRM {isCrmBloqueado && "(Validado)"}</label>
                     </div>
+
                     <label className="form-label fw-bold text-muted mb-2">
                       Especialidades Médicas
                     </label>
@@ -278,7 +283,7 @@ export function Perfil() {
                       ))}
                     </div>
                     <select
-                      className="form-select bg-white"
+                      className="form-select bg-white mb-4"
                       onChange={handleAddEspecialidade}
                       defaultValue=""
                     >
@@ -295,6 +300,17 @@ export function Perfil() {
                         </option>
                       ))}
                     </select>
+
+                    <div className="form-floating">
+                      <textarea
+                        className="form-control bg-white"
+                        style={{ height: "120px" }}
+                        value={biografia}
+                        onChange={(e) => setBiografia(e.target.value)}
+                        placeholder="Conte um pouco sobre sua formação e experiência..."
+                      ></textarea>
+                      <label>Biografia (Aparecerá no seu Perfil Público)</label>
+                    </div>
                   </div>
                 )}
                 <div className="d-flex justify-content-end">

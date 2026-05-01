@@ -18,6 +18,7 @@ import { AgendarConsulta } from "./pages/AgendarConsulta";
 import { SalaTeleconsulta } from "./pages/SalaTeleconsulta";
 import { ExamesPaciente } from "./pages/ExamesPaciente";
 import { DocumentoMedico } from './pages/DocumentoMedico';
+import { PerfilMedicoPublico } from './pages/PerfilMedicoPublico';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/sala/:agendamentoId" element={<SalaTeleconsulta />} />
         <Route path="/exames" element={<ExamesPaciente />} />
         <Route path="/documento/:agendamentoId/:tipo" element={<DocumentoMedico />} />
+        <Route path="/medico/:medicoId" element={<PerfilMedicoPublico />} />
       </Routes>
 
       <Footer />
