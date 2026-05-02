@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-
 const LISTA_ESPECIALIDADES = [
   "Cardiologia",
   "Neurologia",
@@ -13,6 +12,34 @@ const LISTA_ESPECIALIDADES = [
   "Endocrinologia",
   "Dermatologia",
   "Pneumologia",
+  "Geriatria",
+  "Medicina de Família e Comunidade",
+  "Clínica Médica",
+  "Nefrologia",
+  "Urologia",
+  "Oftalmologia",
+  "Otorrinolaringologia",
+  "Gastroenterologia",
+  "Hematologia",
+  "Infectologia",
+  "Angiologia",
+  "Cirurgia Vascular",
+  "Fisiatria (Medicina de Reabilitação)",
+  "Medicina da Dor",
+  "Cuidados Paliativos",
+  "Imunologia",
+  "Alergologia",
+  "Neuropsicologia",
+  "Psicogeriatria",
+  "Terapia Ocupacional",
+  "Fonoaudiologia",
+  "Fisioterapia",
+  "Nutrição",
+  "Educação Física (Saúde do Idoso)",
+  "Medicina do Sono",
+  "Gerontologia",
+  "Odontogeriatria",
+  "Podologia",
 ];
 
 interface Medico {
