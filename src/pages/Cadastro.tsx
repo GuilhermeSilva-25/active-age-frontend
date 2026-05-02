@@ -171,11 +171,14 @@ export function Cadastro() {
     };
 
     try {
-      const response = await fetch("https://active-age-backend.onrender.com/api/usuarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        "https://active-age-backend.onrender.com/api/usuarios",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (response.ok) {
         Swal.fire({
@@ -476,10 +479,21 @@ export function Cadastro() {
                 <div className="d-grid">
                   <button
                     type="submit"
-                    className="btn btn-primary btn-lg py-3 fs-5 shadow-sm"
+                    className="btn btn-primary btn-lg py-3 fs-5 shadow-sm d-flex justify-content-center align-items-center"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Criando Conta..." : "Criar Minha Conta"}
+                    {isLoading ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                        Criando Conta...
+                      </>
+                    ) : (
+                      "Criar Minha Conta"
+                    )}
                   </button>
                 </div>
               </form>
