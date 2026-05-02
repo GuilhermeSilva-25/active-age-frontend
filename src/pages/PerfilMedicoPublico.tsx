@@ -23,7 +23,7 @@ export function PerfilMedicoPublico() {
 
     try {
       const resMedico = await fetch(
-        `http://localhost:8080/api/usuarios/${medicoId}`,
+        `https://active-age-backend.onrender.com/api/usuarios/${medicoId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -44,7 +44,7 @@ export function PerfilMedicoPublico() {
       }
 
       const resAvaliacoes = await fetch(
-        `http://localhost:8080/api/agendamentos/medico/${medicoId}/avaliacoes`,
+        `https://active-age-backend.onrender.com/api/agendamentos/medico/${medicoId}/avaliacoes`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

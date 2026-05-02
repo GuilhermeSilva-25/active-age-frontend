@@ -27,7 +27,7 @@ export function DocumentoMedico() {
           ? `paciente/${usuarioLogado.id}`
           : `medico/${usuarioLogado.id}/todos`;
       const resAgendamento = await fetch(
-        `http://localhost:8080/api/agendamentos/${rota}`,
+        `https://active-age-backend.onrender.com/api/agendamentos/${rota}`,
       );
       if (resAgendamento.ok) {
         const agendamentos = await resAgendamento.json();
@@ -37,7 +37,7 @@ export function DocumentoMedico() {
         setAgendamento(agendaAtual);
 
         const resProntuario = await fetch(
-          `http://localhost:8080/api/prontuarios/agendamento/${agendamentoId}`,
+          `https://active-age-backend.onrender.com/api/prontuarios/agendamento/${agendamentoId}`,
         );
         if (resProntuario.ok) {
           const prt = await resProntuario.json();

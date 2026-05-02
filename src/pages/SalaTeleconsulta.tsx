@@ -68,7 +68,7 @@ export function SalaTeleconsulta() {
         usuarioLogado.tipo === "PACIENTE"
           ? `paciente/${usuarioLogado.id}`
           : `medico/${usuarioLogado.id}/todos`;
-      const res = await fetch(`http://localhost:8080/api/agendamentos/${rota}`);
+      const res = await fetch(`https://active-age-backend.onrender.com/api/agendamentos/${rota}`);
 
       if (res.ok) {
         const data = await res.json();
@@ -96,7 +96,7 @@ export function SalaTeleconsulta() {
   const carregarExamesDoPaciente = async (pacienteId: string) => {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/exames/paciente/${pacienteId}`,
+        `https://active-age-backend.onrender.com/api/exames/paciente/${pacienteId}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -123,7 +123,7 @@ export function SalaTeleconsulta() {
     setIsSaving(true);
     try {
       const res = await fetch(
-        `http://localhost:8080/api/prontuarios/medico/${user.id}`,
+        `https://active-age-backend.onrender.com/api/prontuarios/medico/${user.id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -32,7 +32,7 @@ export function AgendarConsulta() {
   const carregarHorariosLivres = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/agendamentos/disponiveis/${medicoId}`,
+        `https://active-age-backend.onrender.com/api/agendamentos/disponiveis/${medicoId}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -67,7 +67,7 @@ export function AgendarConsulta() {
       if (result.isConfirmed) {
         try {
           const res = await fetch(
-            `http://localhost:8080/api/agendamentos/marcar/${agendamentoId}/paciente/${pacienteId}`,
+            `https://active-age-backend.onrender.com/api/agendamentos/marcar/${agendamentoId}/paciente/${pacienteId}`,
             { method: "PUT" },
           );
           if (res.ok) {

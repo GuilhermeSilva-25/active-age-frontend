@@ -131,7 +131,7 @@ export function Perfil() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/usuarios/perfil/${user?.id}`,
+        `https://active-age-backend.onrender.com/api/usuarios/perfil/${user?.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

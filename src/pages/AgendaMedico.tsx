@@ -43,7 +43,7 @@ export function AgendaMedico() {
   const carregarAgenda = async (medicoId: string) => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/agendamentos/medico/${medicoId}/todos`,
+        `https://active-age-backend.onrender.com/api/agendamentos/medico/${medicoId}/todos`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -89,7 +89,7 @@ export function AgendaMedico() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/agendamentos/medico/${user?.id}`,
+        `https://active-age-backend.onrender.com/api/agendamentos/medico/${user?.id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -133,7 +133,7 @@ export function AgendaMedico() {
       if (result.isConfirmed) {
         try {
           const res = await fetch(
-            `http://localhost:8080/api/agendamentos/cancelar/${id}/usuario/${user?.id}`,
+            `https://active-age-backend.onrender.com/api/agendamentos/cancelar/${id}/usuario/${user?.id}`,
             { method: "PUT" },
           );
           if (res.ok) {

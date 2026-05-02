@@ -83,7 +83,7 @@ export function BuscaMedicos() {
   const carregarMedicos = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8080/api/usuarios/medicos",
+        "https://active-age-backend.onrender.com/api/usuarios/medicos",
       );
       if (response.ok) {
         const data: Medico[] = await response.json();
@@ -103,7 +103,7 @@ export function BuscaMedicos() {
       listaMedicos.map(async (medico) => {
         try {
           const res = await fetch(
-            `http://localhost:8080/api/agendamentos/disponiveis/${medico.id}`,
+            `https://active-age-backend.onrender.com/api/agendamentos/disponiveis/${medico.id}`,
           );
           if (res.ok) {
             const vagas = await res.json();

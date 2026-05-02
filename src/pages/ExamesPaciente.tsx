@@ -40,7 +40,7 @@ export function ExamesPaciente() {
   const carregarExames = async (id: string) => {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/exames/paciente/${id}`,
+        `https://active-age-backend.onrender.com/api/exames/paciente/${id}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -84,7 +84,7 @@ export function ExamesPaciente() {
     setIsUploading(true);
     try {
       const res = await fetch(
-        `http://localhost:8080/api/exames/paciente/${pacienteId}`,
+        `https://active-age-backend.onrender.com/api/exames/paciente/${pacienteId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -126,7 +126,7 @@ export function ExamesPaciente() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const res = await fetch(`http://localhost:8080/api/exames/${id}`, {
+          const res = await fetch(`https://active-age-backend.onrender.com/api/exames/${id}`, {
             method: "DELETE",
           });
           if (res.ok) {

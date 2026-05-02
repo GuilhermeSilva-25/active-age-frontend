@@ -62,7 +62,7 @@ export function Dashboard() {
     try {
       const rota =
         u.tipo === "PACIENTE" ? `paciente/${u.id}` : `medico/${u.id}/todos`;
-      const res = await fetch(`http://localhost:8080/api/agendamentos/${rota}`);
+      const res = await fetch(`https://active-age-backend.onrender.com/api/agendamentos/${rota}`);
       if (res.ok) {
         const data = await res.json();
         setAgendamentos(data);
@@ -76,7 +76,7 @@ export function Dashboard() {
 
   const carregarPendentes = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/validacoes/pendentes");
+      const res = await fetch("https://active-age-backend.onrender.com/api/validacoes/pendentes");
       if (res.ok) {
         const data = await res.json();
         setPedidosAdmin(data);
@@ -105,7 +105,7 @@ export function Dashboard() {
     if (!user) return;
     try {
       const res = await fetch(
-        `http://localhost:8080/api/validacoes/solicitar/${user.id}`,
+        `https://active-age-backend.onrender.com/api/validacoes/solicitar/${user.id}`,
         { method: "POST" },
       );
       if (res.ok) {
@@ -135,7 +135,7 @@ export function Dashboard() {
   ) => {
     try {
       const res = await fetch(
-        `http://localhost:8080/api/validacoes/avaliar/${id}`,
+        `https://active-age-backend.onrender.com/api/validacoes/avaliar/${id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -210,7 +210,7 @@ export function Dashboard() {
         setAgendamentos((prev) => prev.filter((a) => a.id !== id));
         try {
           const res = await fetch(
-            `http://localhost:8080/api/agendamentos/cancelar/${id}/usuario/${user.id}`,
+            `https://active-age-backend.onrender.com/api/agendamentos/cancelar/${id}/usuario/${user.id}`,
             { method: "PUT" },
           );
           if (res.ok) {
@@ -271,7 +271,7 @@ export function Dashboard() {
     if (formValues && user) {
       try {
         const res = await fetch(
-          `http://localhost:8080/api/agendamentos/${agendamentoId}/avaliar`,
+          `https://active-age-backend.onrender.com/api/agendamentos/${agendamentoId}/avaliar`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },

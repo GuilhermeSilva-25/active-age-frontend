@@ -29,7 +29,7 @@ export function EsqueceuSenha() {
 
     try {
       const response = await fetch(
-        "http://localhost:8080/api/auth/recuperar-senha",
+        "https://active-age-backend.onrender.com/api/auth/recuperar-senha",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

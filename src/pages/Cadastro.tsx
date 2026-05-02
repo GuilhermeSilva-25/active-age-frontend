@@ -171,7 +171,7 @@ export function Cadastro() {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/api/usuarios", {
+      const response = await fetch("https://active-age-backend.onrender.com/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
