@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
 
@@ -32,6 +32,10 @@ export function Dashboard() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pedidosAdmin, setPedidosAdmin] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const historicoRef = useRef<HTMLDivElement>(null);
+  const agendaPacienteRef = useRef<HTMLDivElement>(null);
+  const agendaMedicoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem("activeAgeUser");
@@ -81,6 +85,19 @@ export function Dashboard() {
       console.error("Erro ao buscar pendentes:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const scroll = (
+    ref: React.RefObject<HTMLDivElement>,
+    direction: "left" | "right",
+  ) => {
+    if (ref.current) {
+      const scrollAmount = 350;
+      ref.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -263,7 +280,7 @@ export function Dashboard() {
         );
         if (res.ok) {
           Swal.fire("Sucesso!", "Sua avaliação foi publicada.", "success");
-          carregarDados(user); // Recarrega para mostrar as estrelinhas no histórico!
+          carregarDados(user);
         }
       } catch (error) {
         Swal.fire("Erro", "Não foi possível enviar a avaliação.", "error");
@@ -307,95 +324,109 @@ export function Dashboard() {
         style={{ borderRadius: "15px" }}
       >
         <div className="card-body p-4">
-          <h5 style={{ color: "var(--aa-brown)" }} className="mb-4">
-            <i className="bi bi-clock-history me-2"></i>Histórico de
-            Atendimentos
-          </h5>
-          <div className="d-flex flex-column gap-3">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h5 style={{ color: "var(--aa-brown)" }} className="mb-0">
+              <i className="bi bi-clock-history me-2"></i>Histórico Clínico
+            </h5>
+            <div>
+              <button
+                className="btn btn-sm btn-light border rounded-circle me-2"
+                onClick={() => scroll(historicoRef, "left")}
+              >
+                <i className="bi bi-chevron-left"></i>
+              </button>
+              <button
+                className="btn btn-sm btn-light border rounded-circle"
+                onClick={() => scroll(historicoRef, "right")}
+              >
+                <i className="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div className="horizontal-scroll gap-3 pb-2" ref={historicoRef}>
             {historico.map((a) => (
               <div
                 key={a.id}
                 className="p-4 border shadow-sm bg-white d-flex flex-column gap-3 border-start border-4 border-success"
-                style={{ borderRadius: "12px" }}
+                style={{
+                  borderRadius: "12px",
+                  minWidth: "350px",
+                  flex: "0 0 auto",
+                }}
               >
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-start border-bottom pb-3 gap-3">
-                  <div>
-                    <h6 className="fw-bold mb-1 text-dark">
-                      Consulta em{" "}
-                      {new Date(a.dataHora).toLocaleDateString("pt-BR")}
-                    </h6>
-                    <div className="text-muted small fw-semibold">
-                      {user?.tipo === "PACIENTE" ? (
-                        <>
-                          <i className="bi bi-hospital me-1"></i> Médico:{" "}
-                          {a.medicoNome}
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-person me-1"></i> Paciente:{" "}
-                          {a.pacienteNome}
-                        </>
-                      )}
-                    </div>
+                <div className="border-bottom pb-3">
+                  <h6 className="fw-bold mb-1 text-dark">
+                    Consulta em{" "}
+                    {new Date(a.dataHora).toLocaleDateString("pt-BR")}
+                  </h6>
+                  <div className="text-muted small fw-semibold">
+                    {user?.tipo === "PACIENTE" ? (
+                      <>
+                        <i className="bi bi-hospital me-1"></i> Médico:{" "}
+                        {a.medicoNome}
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-person me-1"></i> Paciente:{" "}
+                        {a.pacienteNome}
+                      </>
+                    )}
                   </div>
-
-                  {user?.tipo === "PACIENTE" && a.medicoId && (
-                    <div className="d-flex flex-column align-items-end gap-2">
-                      <Link
-                        to={`/medico/${a.medicoId}`}
-                        className="btn btn-sm btn-outline-secondary fw-bold shadow-sm"
-                      >
-                        <i className="bi bi-person-badge me-1"></i> Ver Perfil
-                        do Médico
-                      </Link>
-                      {!a.notaAvaliacao ? (
-                        <button
-                          className="btn btn-sm btn-warning shadow-sm fw-bold text-dark"
-                          onClick={() => avaliarConsulta(a.id, a.medicoNome!)}
-                        >
-                          <i className="bi bi-star-fill me-1"></i> Avaliar
-                          Consulta
-                        </button>
-                      ) : (
-                        <span
-                          className="badge bg-light text-warning border border-warning fs-6 shadow-sm"
-                          title={`Você avaliou com ${a.notaAvaliacao} estrelas.`}
-                        >
-                          {"⭐".repeat(a.notaAvaliacao)}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
 
+                {user?.tipo === "PACIENTE" && a.medicoId && (
+                  <div className="d-flex flex-wrap gap-2">
+                    <Link
+                      to={`/medico/${a.medicoId}`}
+                      className="btn btn-sm btn-outline-secondary fw-bold shadow-sm flex-grow-1"
+                    >
+                      <i className="bi bi-person-badge me-1"></i> Perfil
+                    </Link>
+                    {!a.notaAvaliacao ? (
+                      <button
+                        className="btn btn-sm btn-warning shadow-sm fw-bold text-dark flex-grow-1"
+                        onClick={() => avaliarConsulta(a.id, a.medicoNome!)}
+                      >
+                        <i className="bi bi-star-fill me-1"></i> Avaliar
+                      </button>
+                    ) : (
+                      <span
+                        className="badge bg-light text-warning border border-warning fs-6 shadow-sm flex-grow-1 d-flex align-items-center justify-content-center"
+                        title={`Você avaliou com ${a.notaAvaliacao} estrelas.`}
+                      >
+                        {"⭐".repeat(a.notaAvaliacao)}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div>
-                  <p className="small text-muted fw-bold mb-2">
-                    Documentos Gerados:
-                  </p>
+                  <p className="small text-muted fw-bold mb-2">Documentos:</p>
                   <div className="d-flex flex-wrap gap-2">
                     <Link
                       to={`/documento/${a.id}/prontuario`}
-                      className="btn btn-sm btn-outline-primary fw-bold shadow-sm"
+                      className="btn btn-sm btn-outline-primary fw-bold shadow-sm flex-grow-1"
                     >
-                      <i className="bi bi-file-medical me-1"></i> Prontuário
+                      Prontuário
                     </Link>
                     <Link
                       to={`/documento/${a.id}/receita`}
-                      className="btn btn-sm btn-outline-success fw-bold shadow-sm"
+                      className="btn btn-sm btn-outline-success fw-bold shadow-sm flex-grow-1"
                     >
-                      <i className="bi bi-capsule me-1"></i> Receita
+                      Receita
                     </Link>
                     <Link
                       to={`/documento/${a.id}/atestado`}
-                      className="btn btn-sm btn-outline-warning text-dark fw-bold shadow-sm"
+                      className="btn btn-sm btn-outline-warning text-dark fw-bold shadow-sm flex-grow-1"
                     >
-                      <i className="bi bi-file-earmark-text me-1"></i> Atestado
+                      Atestado
                     </Link>
                     <Link
                       to={`/documento/${a.id}/pedidos`}
-                      className="btn btn-sm btn-outline-info text-dark fw-bold shadow-sm"
+                      className="btn btn-sm btn-outline-info text-dark fw-bold shadow-sm flex-grow-1"
                     >
-                      <i className="bi bi-clipboard2-pulse me-1"></i> Pedidos
+                      Pedidos
                     </Link>
                   </div>
                 </div>
@@ -489,16 +520,42 @@ export function Dashboard() {
           style={{ borderRadius: "15px" }}
         >
           <div className="card-body p-4">
-            <h5 style={{ color: "var(--aa-brown)" }} className="mb-4">
-              <i className="bi bi-list-ul me-2"></i>Minha Agenda
-            </h5>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h5 style={{ color: "var(--aa-brown)" }} className="mb-0">
+                <i className="bi bi-list-ul me-2"></i>Minha Agenda
+              </h5>
+              {outrasConsultas.length > 0 && (
+                <div>
+                  <button
+                    className="btn btn-sm btn-light border rounded-circle me-2"
+                    onClick={() => scroll(agendaPacienteRef, "left")}
+                  >
+                    <i className="bi bi-chevron-left"></i>
+                  </button>
+                  <button
+                    className="btn btn-sm btn-light border rounded-circle"
+                    onClick={() => scroll(agendaPacienteRef, "right")}
+                  >
+                    <i className="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {outrasConsultas.length > 0 ? (
-              <div className="d-flex flex-column gap-3">
+              <div
+                className="horizontal-scroll gap-3 pb-2"
+                ref={agendaPacienteRef}
+              >
                 {outrasConsultas.map((a) => (
                   <div
                     key={a.id}
-                    className="p-4 border shadow-sm bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3"
-                    style={{ borderRadius: "12px" }}
+                    className="p-4 border shadow-sm bg-white d-flex flex-column justify-content-between gap-3"
+                    style={{
+                      borderRadius: "12px",
+                      minWidth: "320px",
+                      flex: "0 0 auto",
+                    }}
                   >
                     <div>
                       <h5
@@ -512,7 +569,7 @@ export function Dashboard() {
                         {a.medicoEspecializacao || "Geriatria"} &nbsp;|&nbsp;
                         CRM: {a.medicoCrm || "N/A"}
                       </div>
-                      <span className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill">
+                      <span className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill d-inline-block w-100 text-center">
                         <i className="bi bi-clock-fill me-2"></i>
                         {formatarDataHora(a.dataHora).dia} às{" "}
                         {formatarDataHora(a.dataHora).hora}
@@ -520,7 +577,7 @@ export function Dashboard() {
                     </div>
                     <div>
                       <button
-                        className="btn btn-outline-danger px-4 shadow-sm w-100"
+                        className="btn btn-outline-danger px-4 shadow-sm w-100 fw-bold"
                         onClick={() => handleCancelar(a.id)}
                       >
                         <i className="bi bi-x-circle me-2"></i>Cancelar Consulta
@@ -530,7 +587,7 @@ export function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="alert alert-light text-center border">
+              <div className="alert alert-light text-center border mb-0">
                 <p className="text-muted small mb-0">
                   Sem outros compromissos na agenda.
                 </p>
@@ -593,13 +650,36 @@ export function Dashboard() {
               style={{ borderRadius: "15px" }}
             >
               <div className="card-body p-4">
-                <h4 style={{ color: "var(--aa-brown)" }} className="mb-4">
-                  <i className="bi bi-calendar-check me-2"></i>Meus Próximos
-                  Atendimentos
-                </h4>
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h4 style={{ color: "var(--aa-brown)" }} className="mb-0">
+                    <i className="bi bi-calendar-check me-2"></i>Meus Próximos
+                    Atendimentos
+                  </h4>
+                  {agendamentos.filter((a) => a.status === "AGENDADO").length >
+                    0 && (
+                    <div>
+                      <button
+                        className="btn btn-sm btn-light border rounded-circle me-2"
+                        onClick={() => scroll(agendaMedicoRef, "left")}
+                      >
+                        <i className="bi bi-chevron-left"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-light border rounded-circle"
+                        onClick={() => scroll(agendaMedicoRef, "right")}
+                      >
+                        <i className="bi bi-chevron-right"></i>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {agendamentos.filter((a) => a.status === "AGENDADO").length >
                 0 ? (
-                  <div className="d-flex flex-column gap-3">
+                  <div
+                    className="horizontal-scroll gap-3 pb-2"
+                    ref={agendaMedicoRef}
+                  >
                     {agendamentos
                       .filter((a) => a.status === "AGENDADO")
                       .sort(
@@ -610,44 +690,39 @@ export function Dashboard() {
                       .map((a) => (
                         <div
                           key={a.id}
-                          className="border rounded p-4 shadow-sm bg-white"
+                          className="border rounded p-4 shadow-sm bg-white d-flex flex-column justify-content-between gap-4"
+                          style={{
+                            minWidth: "320px",
+                            flex: "0 0 auto",
+                            borderLeft: "4px solid var(--aa-orange) !important",
+                          }}
                         >
-                          <div className="row align-items-center">
-                            <div className="col-md-6 mb-3 mb-md-0">
-                              <div
-                                className="ps-3"
-                                style={{
-                                  borderLeft: "4px solid var(--aa-orange)",
-                                }}
-                              >
-                                <h5 className="fw-bold text-dark mb-1">
-                                  <i className="bi bi-calendar-event me-2 text-muted"></i>
-                                  {formatarDataHora(a.dataHora).dia} às{" "}
-                                  {formatarDataHora(a.dataHora).hora}
-                                </h5>
-                                <span className="text-muted fw-semibold">
-                                  <i className="bi bi-person-fill me-2 text-primary"></i>
-                                  {a.pacienteNome || "Paciente Identificado"}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="d-grid d-sm-flex justify-content-md-end gap-2">
-                                <button
-                                  className="btn btn-outline-danger px-4 shadow-sm fw-bold"
-                                  onClick={() => handleCancelar(a.id)}
-                                >
-                                  Cancelar
-                                </button>
-                                <Link
-                                  to={`/sala/${a.id}`}
-                                  className="btn btn-primary px-4 shadow-sm fw-bold"
-                                >
-                                  <i className="bi bi-camera-video me-2"></i>
-                                  Iniciar
-                                </Link>
-                              </div>
-                            </div>
+                          <div>
+                            <h5 className="fw-bold text-dark mb-2">
+                              <i className="bi bi-calendar-event me-2 text-muted"></i>
+                              {formatarDataHora(a.dataHora).dia} às{" "}
+                              {formatarDataHora(a.dataHora).hora}
+                            </h5>
+                            <span className="text-muted fw-semibold d-block mt-2">
+                              <i className="bi bi-person-fill me-2 text-primary"></i>
+                              {a.pacienteNome || "Paciente Identificado"}
+                            </span>
+                          </div>
+
+                          <div className="d-flex flex-column gap-2">
+                            <Link
+                              to={`/sala/${a.id}`}
+                              className="btn btn-primary w-100 shadow-sm fw-bold"
+                            >
+                              <i className="bi bi-camera-video me-2"></i>{" "}
+                              Iniciar Chamada
+                            </Link>
+                            <button
+                              className="btn btn-outline-danger w-100 shadow-sm fw-bold"
+                              onClick={() => handleCancelar(a.id)}
+                            >
+                              Cancelar Consulta
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -671,7 +746,10 @@ export function Dashboard() {
                 className="card shadow-sm border-0 service-feature bg-white p-3"
                 style={{ borderRadius: "15px" }}
               >
-                <h5 style={{ color: "var(--aa-brown)" }} className="m-0">
+                <h5
+                  style={{ color: "var(--aa-brown)" }}
+                  className="m-0 text-center py-2"
+                >
                   <i className="bi bi-gear me-2"></i>Configurar Agenda
                 </h5>
               </div>
@@ -867,7 +945,21 @@ export function Dashboard() {
       {user.tipo === "MEDICO" && renderMedico()}
       {user.tipo === "ADMIN" && renderAdmin()}
 
-      <style>{`.animation-fade-in { animation: fadeIn 0.4s ease-in-out; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      <style>{`
+        .animation-fade-in { animation: fadeIn 0.4s ease-in-out; } 
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .horizontal-scroll {
+          display: flex;
+          overflow-x: auto;
+          scroll-behavior: smooth;
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        .horizontal-scroll::-webkit-scrollbar {
+          display: none; /* Chrome, Safari and Opera */
+        }
+      `}</style>
     </main>
   );
 }
