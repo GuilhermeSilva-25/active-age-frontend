@@ -60,7 +60,7 @@ export function Navbar() {
           <img
             src="/logo.png"
             alt="Active Age Logo"
-            height="110"
+            height="100"
             className="me-2"
           />
         </Link>
