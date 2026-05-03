@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
+import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 
 interface Agendamento {
   id: string;
@@ -68,7 +69,9 @@ export function SalaTeleconsulta() {
         usuarioLogado.tipo === "PACIENTE"
           ? `paciente/${usuarioLogado.id}`
           : `medico/${usuarioLogado.id}/todos`;
-      const res = await fetch(`https://active-age-backend.onrender.com/api/agendamentos/${rota}`);
+      const res = await fetch(
+        `https://active-age-backend.onrender.com/api/agendamentos/${rota}`,
+      );
 
       if (res.ok) {
         const data = await res.json();
@@ -230,6 +233,39 @@ export function SalaTeleconsulta() {
     });
   };
 
+  const myMeeting = async (element: HTMLDivElement | null) => {
+    if (!element || !user || !agendamentoId) return;
+
+    const appID = 235141838;
+    const serverSecret = "155ea1439ae91e6090cadf178959ec0e";
+
+    const roomID = agendamentoId;
+
+    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+      appID,
+      serverSecret,
+      roomID,
+      user.id,
+      user.nome,
+    );
+
+    const zp = ZegoUIKitPrebuilt.create(kitToken);
+
+    zp.joinRoom({
+      container: element,
+      scenario: {
+        mode: ZegoUIKitPrebuilt.OneONoneCall,
+      },
+      showPreJoinView: false,
+      turnOnMicrophoneWhenJoining: true,
+      turnOnCameraWhenJoining: true,
+      showLeaveRoomConfirmDialog: false,
+      onLeaveRoom: () => {
+        sairDaSala();
+      },
+    });
+  };
+
   if (!agendamento)
     return (
       <div className="text-center py-5">
@@ -259,21 +295,13 @@ export function SalaTeleconsulta() {
               </p>
 
               <div
-                className="bg-dark text-white rounded-4 mb-4 w-100 position-relative d-flex flex-column justify-content-center align-items-center shadow-inner overflow-hidden"
+                ref={myMeeting}
+                className="w-100 rounded-4 shadow-inner overflow-hidden mb-4"
                 style={{
-                  minHeight: "350px",
+                  height: "450px",
                   border: "4px solid var(--aa-green)",
                 }}
-              >
-                <div className="position-absolute top-0 start-0 m-3 d-flex align-items-center">
-                  <div className="spinner-grow text-danger spinner-grow-sm me-2"></div>
-                  <span className="badge bg-danger">AO VIVO</span>
-                </div>
-                <div className="text-center my-auto d-flex flex-column align-items-center">
-                  <i className="bi bi-person-video display-1 mb-3 text-muted d-block"></i>
-                  <h2 className="h4 mb-0">Aguardando câmera...</h2>
-                </div>
-              </div>
+              ></div>
 
               <div className="mb-4 p-3 bg-light rounded border text-start shadow-sm w-100">
                 {user?.tipo === "MEDICO" ? (
@@ -300,11 +328,13 @@ export function SalaTeleconsulta() {
                   </>
                 )}
               </div>
+
               <button
                 className="btn btn-danger btn-lg px-5 py-3 fw-bold shadow-sm mt-auto"
                 onClick={sairDaSala}
               >
-                <i className="bi bi-telephone-x-fill me-2"></i>Sair da Consulta
+                <i className="bi bi-telephone-x-fill me-2"></i>Voltar ao
+                Dashboard
               </button>
             </div>
           </div>
