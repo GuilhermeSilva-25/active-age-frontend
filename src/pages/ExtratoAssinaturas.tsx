@@ -222,21 +222,21 @@ export function ExtratoAssinaturas() {
         <div>
           <div className="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
             <div
-              className="card-header p-4 text-white d-flex justify-content-between align-items-center flex-wrap gap-3"
+              className="card-header p-4 text-dark d-flex justify-content-between align-items-center flex-wrap gap-3"
               style={{ backgroundColor: "var(--aa-green)" }}
             >
               <div>
                 <span className="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold mb-2">
                   PLANO ATIVO
                 </span>
-                <h3 className="fw-bold mb-0 text-white">
+                <h3 className="fw-bold mb-0 text-dark">
                   {minhaAssinatura.planoNome}
                 </h3>
               </div>
 
               <div className="d-flex align-items-center gap-3">
                 <div className="text-end">
-                  <span className="text-white-50 small d-block">
+                  <span className="text-dark small d-block">
                     VALOR DA ASSINATURA
                   </span>
                   <span
@@ -245,7 +245,7 @@ export function ExtratoAssinaturas() {
                   >
                     R$ {minhaAssinatura.valor.toFixed(2)}
                   </span>
-                  <span className="text-white-50">
+                  <span className="text-dark">
                     /{minhaAssinatura.ciclo === "MENSAL" ? "mês" : "ano"}
                   </span>
                 </div>
