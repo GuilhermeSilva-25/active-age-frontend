@@ -57,11 +57,6 @@ const PERGUNTAS_FREQUENTES = [
       "No plano mensal, o valor é debitado a cada 30 dias. No plano anual, você garante um desconto especial no valor mensal com cobrança única ou parcelada no cartão de crédito.",
   },
   {
-    pergunta: "Posso cancelar minha assinatura quando quiser?",
-    resposta:
-      "Sim! Você pode fazer o cancelamento da sua assinatura diretamente pelo painel a qualquer momento, sem taxas ocultas ou fidelidade.",
-  },
-  {
     pergunta: "A teleconsulta atende às normas do CFM e da LGPD?",
     resposta:
       "Sim, toda a infraestrutura do Active Age foi desenvolvida em total conformidade com as resoluções do Conselho Federal de Medicina (CFM) e requisitos de segurança da LGPD.",
