@@ -93,9 +93,9 @@ export function PlanosMedico() {
       title: "Assinatura Confirmada!",
       text: `O pagamento do ${detalhes.planoNome} foi processado com sucesso pelo Mercado Pago.`,
       confirmButtonColor: "var(--aa-green)",
-      confirmButtonText: "Ver Extrato & Faturas",
+      confirmButtonText: "Voltar ao Dashboard",
     }).then(() => {
-      navigate("/extrato-assinaturas");
+      navigate("/dashboard");
     });
   };
 
