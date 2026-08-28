@@ -755,7 +755,7 @@ export function Dashboard() {
               </div>
             </Link>
 
-                        <Link to="/planos-medico" className="text-decoration-none">
+            <Link to="/planos-medico" className="text-decoration-none">
               <div
                 className="card shadow-sm border-0 service-feature bg-white p-3"
                 style={{
@@ -771,6 +771,24 @@ export function Dashboard() {
                 </h5>
               </div>
             </Link>
+
+            <Link to="/extrato-assinaturas" className="text-decoration-none">
+              <div
+                className="card shadow-sm border-0 service-feature bg-white p-3"
+                style={{
+                  borderRadius: "15px",
+                  borderLeft: "5px solid var(--aa-green)",
+                }}
+              >
+                <h5
+                  style={{ color: "var(--aa-brown)" }}
+                  className="m-0 text-center py-2 fw-bold"
+                >
+                  <i className="bi bi-receipt me-2 text-success"></i>Extrato de Assinatura
+                </h5>
+              </div>
+            </Link>
+            
           </div>
         </div>
       );

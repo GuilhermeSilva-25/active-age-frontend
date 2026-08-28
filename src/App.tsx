@@ -20,6 +20,7 @@ import { ExamesPaciente } from "./pages/ExamesPaciente";
 import { DocumentoMedico } from './pages/DocumentoMedico';
 import { PerfilMedicoPublico } from './pages/PerfilMedicoPublico';
 import { PlanosMedico } from './pages/PlanosMedico';
+import { ExtratoAssinaturas } from './pages/ExtratoAssinaturas';
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
         <Route path="/documento/:agendamentoId/:tipo" element={<DocumentoMedico />} />
         <Route path="/medico/:medicoId" element={<PerfilMedicoPublico />} />
         <Route path="/planos-medico" element={<PlanosMedico />} />
+        <Route path="/extrato-assinaturas" element={<ExtratoAssinaturas />} />
       </Routes>
 
       <Footer />
