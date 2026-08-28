@@ -754,6 +754,23 @@ export function Dashboard() {
                 </h5>
               </div>
             </Link>
+
+                        <Link to="/planos-medico" className="text-decoration-none">
+              <div
+                className="card shadow-sm border-0 service-feature bg-white p-3"
+                style={{
+                  borderRadius: "15px",
+                  borderLeft: "5px solid var(--aa-orange)",
+                }}
+              >
+                <h5
+                  style={{ color: "var(--aa-orange)" }}
+                  className="m-0 text-center py-2 fw-bold"
+                >
+                  <i className="bi bi-rocket-takeoff me-2"></i>Planos do Consultório
+                </h5>
+              </div>
+            </Link>
           </div>
         </div>
       );
