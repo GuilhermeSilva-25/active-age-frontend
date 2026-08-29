@@ -49,21 +49,59 @@ export function Dashboard() {
     if (usuarioLogado.tipo === "MEDICO" && !usuarioLogado.statusValidacao) {
       usuarioLogado.statusValidacao = "PENDENTE";
     }
-
     setUser(usuarioLogado);
+    if (usuarioLogado.tipo === "ADMIN") carregarPendentes();
+    else carregarDados(usuarioLogado);
 
-    if (usuarioLogado.tipo === "ADMIN") {
-      carregarPendentes();
-    } else {
-      carregarDados(usuarioLogado);
-    }
+    const checarNovidades = () => {
+      fetch(
+        `https://active-age-backend.onrender.com/api/usuarios/${usuarioLogado.id}`,
+      )
+        .then((res) => res.json())
+        .then((dadosFresquinhos) => {
+          if (
+            dadosFresquinhos.tipo === "MEDICO" &&
+            !dadosFresquinhos.statusValidacao
+          ) {
+            dadosFresquinhos.statusValidacao = "PENDENTE";
+          }
+
+          const estadoAtual = JSON.parse(
+            localStorage.getItem("activeAgeUser") || "{}",
+          );
+
+          const mudouValidacao =
+            estadoAtual.statusValidacao !== dadosFresquinhos.statusValidacao;
+          const mudouAssinatura =
+            estadoAtual.assinaturaAtiva !== dadosFresquinhos.assinaturaAtiva;
+
+          if (mudouValidacao || mudouAssinatura) {
+            localStorage.setItem(
+              "activeAgeUser",
+              JSON.stringify(dadosFresquinhos),
+            );
+            setUser(dadosFresquinhos);
+          }
+        })
+        .catch((erro) =>
+          console.error("Sem conexão para atualizar em tempo real.", erro),
+        );
+    };
+
+    checarNovidades();
+
+    const relogio = setInterval(checarNovidades, 10000);
+
+    return () => clearInterval(relogio);
   }, [navigate]);
 
   const carregarDados = async (u: Usuario) => {
     try {
       const rota =
         u.tipo === "PACIENTE" ? `paciente/${u.id}` : `medico/${u.id}/todos`;
-      const res = await fetch(`https://active-age-backend.onrender.com/api/agendamentos/${rota}`);
+      const res = await fetch(
+        `https://active-age-backend.onrender.com/api/agendamentos/${rota}`,
+      );
       if (res.ok) {
         const data = await res.json();
         setAgendamentos(data);
@@ -77,7 +115,9 @@ export function Dashboard() {
 
   const carregarPendentes = async () => {
     try {
-      const res = await fetch("https://active-age-backend.onrender.com/api/validacoes/pendentes");
+      const res = await fetch(
+        "https://active-age-backend.onrender.com/api/validacoes/pendentes",
+      );
       if (res.ok) {
         const data = await res.json();
         setPedidosAdmin(data);
@@ -769,7 +809,8 @@ export function Dashboard() {
                   style={{ color: "var(--aa-orange)" }}
                   className="m-0 text-center py-2 fw-bold"
                 >
-                  <i className="bi bi-rocket-takeoff me-2"></i>Planos do Consultório
+                  <i className="bi bi-rocket-takeoff me-2"></i>Planos do
+                  Consultório
                 </h5>
               </div>
             </Link>
@@ -786,11 +827,11 @@ export function Dashboard() {
                   style={{ color: "var(--aa-brown)" }}
                   className="m-0 text-center py-2 fw-bold"
                 >
-                  <i className="bi bi-receipt me-2 text-success"></i>Extrato de Assinatura
+                  <i className="bi bi-receipt me-2 text-success"></i>Extrato de
+                  Assinatura
                 </h5>
               </div>
             </Link>
-            
           </div>
         </div>
       );
