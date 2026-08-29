@@ -97,7 +97,7 @@ export function PlanosMedico() {
       const valorDoPlano = cicloCobranca === "MENSAL" ? plano.precoMensal : plano.precoAnual;
 
       const response = await fetch(
-        "https://active-age-payment-service.onrender.com",
+        "https://active-age-payment-service.onrender.com/api/payments/create",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
