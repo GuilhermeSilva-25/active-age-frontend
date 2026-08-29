@@ -42,8 +42,6 @@ const PLANOS_DISPONIVEIS: PlanoConsultorio[] = [
   },
 ];
 
-//alterar perguntas e respostas
-
 const PERGUNTAS_FREQUENTES = [
   {
     pergunta: "Preciso ter meu CRM validado para assinar um plano?",
@@ -94,7 +92,9 @@ export function PlanosMedico() {
         }
       });
 
-      const valorDoPlano = cicloCobranca === "MENSAL" ? plano.precoMensal : plano.precoAnual;
+      const valorFinal = cicloCobranca === "MENSAL" ? parseFloat(plano.precoMensal) : parseFloat(plano.precoAnual) * 12;
+
+      localStorage.setItem("activeAgeCicloEscolhido", cicloCobranca);
 
       const response = await fetch(
         "https://active-age-payment-service.onrender.com/api/payments/create",
@@ -103,9 +103,9 @@ export function PlanosMedico() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             amount: 
-            parseFloat(valorDoPlano),
+            parseFloat(valorFinal),
             description: "Assinatura " + plano.nome,
-            payerEmail: usuarioLogado?.email || "test_user_123456@testuser.com",
+            payerEmail: usuarioLogado?.email || "medico@teste.com",
             type: "SUBSCRIPTION",
             referenceId: "MED-" + usuarioLogado?.id,
           }),
@@ -114,7 +114,8 @@ export function PlanosMedico() {
 
       const data = await response.json();
       if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+        Swal.close();
+        window.open(data.checkoutUrl, '_blank');      
       } else {
         Swal.fire(
           "Erro",
