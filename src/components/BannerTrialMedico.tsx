@@ -152,13 +152,13 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
                   </div>
 
                   <h3
-                    className="fw-bold mb-2"
+                    className="fw-bold mb-4 mt-4"
                     style={{ color: "var(--aa-brown)" }}
                   >
                     Consultório Virtual 100% Ativo e Liberado 🚀
                   </h3>
                   <p
-                    className="text-muted fs-6 mb-3"
+                    className="text-muted fs-6 mb-0"
                     style={{ lineHeight: "1.6" }}
                   >
                     Sua assinatura do{" "}
@@ -169,24 +169,6 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
                     ). O período de 30 dias de degustação gratuita foi
                     automaticamente acumulado ao seu plano.
                   </p>
-
-                  <div className="d-flex flex-wrap gap-2 pt-1">
-                    <Link
-                      to="/agenda-medico"
-                      className="btn btn-primary btn-lg px-4 py-2.5 fw-bold shadow-sm d-flex align-items-center gap-2"
-                      style={{ borderRadius: "12px" }}
-                    >
-                      <i className="bi bi-calendar-plus-fill"></i> Gerenciar
-                      Agenda
-                    </Link>
-                    <Link
-                      to="/extrato-assinaturas"
-                      className="btn btn-outline-secondary btn-lg px-4 py-2.5 fw-semibold"
-                      style={{ borderRadius: "12px" }}
-                    >
-                      <i className="bi bi-receipt me-1.5"></i> Extrato & Faturas
-                    </Link>
-                  </div>
                 </>
               ) : (
                 <>
