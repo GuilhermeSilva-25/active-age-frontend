@@ -378,41 +378,6 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
                       Min
                     </small>
                   </div>
-                  <span
-                    className="fw-bold text-muted"
-                    style={{ fontSize: "1.3rem" }}
-                  >
-                    :
-                  </span>
-
-                  {/* Segundos */}
-                  <div
-                    className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center"
-                    style={{
-                      backgroundColor: "var(--aa-bg)",
-                      border: "1px solid #e5e7eb",
-                      width: "68px",
-                      minWidth: "68px",
-                    }}
-                  >
-                    <span
-                      className="fw-bold mb-0"
-                      style={{
-                        color: "var(--aa-orange)",
-                        fontSize: "1.75rem",
-                        lineHeight: "1.1",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {trialRestante.segundos.toString().padStart(2, "0")}
-                    </span>
-                    <small
-                      className="text-muted fw-bold text-uppercase mt-1"
-                      style={{ fontSize: "0.68rem" }}
-                    >
-                      Seg
-                    </small>
-                  </div>
                 </div>
 
                 <div className="small text-muted py-1 px-2 bg-light rounded-pill border d-inline-block">
