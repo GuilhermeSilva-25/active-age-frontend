@@ -46,34 +46,20 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
     const DURACAO_30_DIAS_MS = 30 * 24 * 60 * 60 * 1000;
 
     let diasAdicionaisMs = 0;
-    const assinaturasSalvas = localStorage.getItem("activeAgeAssinaturas");
-    if (assinaturasSalvas) {
-      try {
-        const lista = JSON.parse(assinaturasSalvas);
-        const ativa = lista.find(
-          (a: any) =>
-            (a.medicoEmail === user.email ||
-              (user.id && a.medicoId === user.id)) &&
-            a.status === "ATIVA",
-        );
-        if (ativa) {
-          const diasPlano = ativa.ciclo === "ANUAL" ? 365 : 30;
-          diasAdicionaisMs = diasPlano * 24 * 60 * 60 * 1000;
-          setAssinaturaAtiva({
-            planoNome: ativa.planoNome || "Plano Profissional Pro",
-            ciclo: ativa.ciclo || "MENSAL",
-            dataInicio: ativa.dataInicio || "",
-            proximaCobranca: ativa.proximaCobranca || "",
-            diasPlano,
-          });
-          setPossuiAssinaturaPaga(true);
-        } else {
-          setAssinaturaAtiva(null);
-          setPossuiAssinaturaPaga(false);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+
+    if (user && user.assinaturaAtiva === true) {
+      diasAdicionaisMs = 30 * 24 * 60 * 60 * 1000;
+      setAssinaturaAtiva({
+        planoNome: "Plano Profissional Pro",
+        ciclo: "MENSAL",
+        dataInicio: new Date().toLocaleDateString("pt-BR"),
+        proximaCobranca: "",
+        diasPlano: 30,
+      });
+      setPossuiAssinaturaPaga(true);
+    } else {
+      setAssinaturaAtiva(null);
+      setPossuiAssinaturaPaga(false);
     }
 
     const duracaoTotalMs = DURACAO_30_DIAS_MS + diasAdicionaisMs;
