@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
+import { BannerTrialMedico } from "../components/BannerTrialMedico";
 
 interface Usuario {
   id: string;
@@ -89,7 +90,7 @@ export function Dashboard() {
   };
 
   const scroll = (
-    ref: React.RefObject<HTMLDivElement>,
+    ref: React.RefObject<HTMLDivElement | null>,
     direction: "left" | "right",
   ) => {
     if (ref.current) {
@@ -644,6 +645,7 @@ export function Dashboard() {
     if (statusAtual === "APROVADO") {
       return (
         <div className="row g-4 animation-fade-in">
+          {user && <BannerTrialMedico user={user} />}
           <div className="col-lg-8">
             <div
               className="card shadow-sm border-0 mb-4"
@@ -754,6 +756,41 @@ export function Dashboard() {
                 </h5>
               </div>
             </Link>
+
+            <Link to="/planos-medico" className="text-decoration-none">
+              <div
+                className="card shadow-sm border-0 service-feature bg-white p-3"
+                style={{
+                  borderRadius: "15px",
+                  borderLeft: "5px solid var(--aa-orange)",
+                }}
+              >
+                <h5
+                  style={{ color: "var(--aa-orange)" }}
+                  className="m-0 text-center py-2 fw-bold"
+                >
+                  <i className="bi bi-rocket-takeoff me-2"></i>Planos do Consultório
+                </h5>
+              </div>
+            </Link>
+
+            <Link to="/extrato-assinaturas" className="text-decoration-none">
+              <div
+                className="card shadow-sm border-0 service-feature bg-white p-3"
+                style={{
+                  borderRadius: "15px",
+                  borderLeft: "5px solid var(--aa-green)",
+                }}
+              >
+                <h5
+                  style={{ color: "var(--aa-brown)" }}
+                  className="m-0 text-center py-2 fw-bold"
+                >
+                  <i className="bi bi-receipt me-2 text-success"></i>Extrato de Assinatura
+                </h5>
+              </div>
+            </Link>
+            
           </div>
         </div>
       );
