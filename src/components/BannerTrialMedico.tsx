@@ -47,14 +47,17 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
 
     let diasAdicionaisMs = 0;
 
+    const cicloEscolhido = localStorage.getItem("activeAgeCicloEscolhido") || "MENSAL";
+    const diasAssinatura = cicloEscolhido === "ANUAL" ? 365 : 30;
+ 
     if (user && user.assinaturaAtiva === true) {
-      diasAdicionaisMs = 30 * 24 * 60 * 60 * 1000;
+      diasAdicionaisMs = diasAssinatura * 24 * 60 * 60 * 1000;
       setAssinaturaAtiva({
         planoNome: "Plano Profissional Pro",
-        ciclo: "MENSAL",
+        ciclo: cicloEscolhido as "MENSAL" | "ANUAL",
         dataInicio: new Date().toLocaleDateString("pt-BR"),
         proximaCobranca: "",
-        diasPlano: 30,
+        diasPlano: diasAssinatura,
       });
       setPossuiAssinaturaPaga(true);
     } else {
