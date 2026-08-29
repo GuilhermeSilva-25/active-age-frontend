@@ -116,6 +116,7 @@ export function PlanosMedico() {
       if (data.checkoutUrl) {
         Swal.close();
         window.open(data.checkoutUrl, '_blank');      
+        navigate("/dashboard");
       } else {
         Swal.fire(
           "Erro",
