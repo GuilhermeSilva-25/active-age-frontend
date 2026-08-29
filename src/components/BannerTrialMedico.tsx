@@ -170,26 +170,6 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
                     automaticamente acumulado ao seu plano.
                   </p>
 
-                  <div className="mb-3" style={{ maxWidth: "520px" }}>
-                    <div className="d-flex justify-content-between align-items-center mb-1 small fw-semibold text-muted">
-                      <span>Vigência Total Acumulada:</span>
-                      <span className="text-success fw-bold">
-                        {trialRestante.dias} dias e {trialRestante.horas}h
-                        restantes
-                      </span>
-                    </div>
-                    <div
-                      className="progress"
-                      style={{ height: "8px", borderRadius: "10px" }}
-                    >
-                      <div
-                        className="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                        role="progressbar"
-                        style={{ width: `${trialRestante.percentual}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
                   <div className="d-flex flex-wrap gap-2 pt-1">
                     <Link
                       to="/agenda-medico"
