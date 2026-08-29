@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
+import { BannerTrialMedico } from "../components/BannerTrialMedico";
 
 interface Usuario {
   id: string;
@@ -644,6 +645,7 @@ export function Dashboard() {
     if (statusAtual === "APROVADO") {
       return (
         <div className="row g-4 animation-fade-in">
+          {user && <BannerTrialMedico user={user} />}
           <div className="col-lg-8">
             <div
               className="card shadow-sm border-0 mb-4"
