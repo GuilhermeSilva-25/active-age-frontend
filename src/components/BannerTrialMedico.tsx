@@ -26,7 +26,9 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
     percentual: 100,
   });
   const [possuiAssinaturaPaga, setPossuiAssinaturaPaga] = useState(false);
-  const [assinaturaAtiva, setAssinaturaAtiva] = useState<AssinaturaInfo | null>(null);
+  const [assinaturaAtiva, setAssinaturaAtiva] = useState<AssinaturaInfo | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -50,8 +52,9 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
         const lista = JSON.parse(assinaturasSalvas);
         const ativa = lista.find(
           (a: any) =>
-            (a.medicoEmail === user.email || (user.id && a.medicoId === user.id)) &&
-            a.status === "ATIVA"
+            (a.medicoEmail === user.email ||
+              (user.id && a.medicoId === user.id)) &&
+            a.status === "ATIVA",
         );
         if (ativa) {
           const diasPlano = ativa.ciclo === "ANUAL" ? 365 : 30;
@@ -93,10 +96,15 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
       }
 
       const dias = Math.floor(diferenca / (1000 * 60 * 60 * 24));
-      const horas = Math.floor((diferenca % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const horas = Math.floor(
+        (diferenca % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
       const minutos = Math.floor((diferenca % (1000 * 60 * 60)) / (1000 * 60));
       const segundos = Math.floor((diferenca % 1000) / 1000);
-      const percentual = Math.max(0, Math.min(100, (diferenca / duracaoTotalMs) * 100));
+      const percentual = Math.max(
+        0,
+        Math.min(100, (diferenca / duracaoTotalMs) * 100),
+      );
 
       setTrialRestante({
         dias,
@@ -122,13 +130,13 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
           background: possuiAssinaturaPaga
             ? "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)"
             : trialRestante.expirado
-            ? "linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)"
-            : "linear-gradient(135deg, #ffffff 0%, #f4fbf4 100%)",
+              ? "linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)"
+              : "linear-gradient(135deg, #ffffff 0%, #f4fbf4 100%)",
           borderLeft: possuiAssinaturaPaga
             ? "6px solid var(--aa-green)"
             : trialRestante.expirado
-            ? "6px solid #dc3545"
-            : "6px solid var(--aa-green)",
+              ? "6px solid #dc3545"
+              : "6px solid var(--aa-green)",
           boxShadow: "0 8px 24px rgba(0, 0, 0, 0.06)",
         }}
       >
@@ -143,33 +151,51 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
                       style={{ fontSize: "0.85rem", letterSpacing: "0.5px" }}
                     >
                       <i className="bi bi-patch-check-fill me-1.5"></i>
-                      {assinaturaAtiva?.planoNome.toUpperCase() || "PLANO PROFISSIONAL"} ATIVO
+                      {assinaturaAtiva?.planoNome.toUpperCase() ||
+                        "PLANO PROFISSIONAL"}{" "}
+                      ATIVO
                     </span>
                     <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 small fw-semibold">
-                      <i className="bi bi-gift-fill me-1"></i> +30 Dias Degustação Somados
+                      <i className="bi bi-gift-fill me-1"></i> +30 Dias
+                      Degustação Somados
                     </span>
                     <span className="badge bg-light text-dark border rounded-pill px-3 py-2 small">
-                      <i className="bi bi-shield-check text-success me-1"></i> CRM Validado
+                      <i className="bi bi-shield-check text-success me-1"></i>{" "}
+                      CRM Validado
                     </span>
                   </div>
 
-                  <h3 className="fw-bold mb-2" style={{ color: "var(--aa-brown)" }}>
+                  <h3
+                    className="fw-bold mb-2"
+                    style={{ color: "var(--aa-brown)" }}
+                  >
                     Consultório Virtual 100% Ativo e Liberado 🚀
                   </h3>
-                  <p className="text-muted fs-6 mb-3" style={{ lineHeight: "1.6" }}>
-                    Sua assinatura do <strong>{assinaturaAtiva?.planoNome}</strong> está ativa (
-                    {assinaturaAtiva?.ciclo === "ANUAL" ? "Ciclo Anual" : "Ciclo Mensal"}).
-                    O período de 30 dias de degustação gratuita foi automaticamente acumulado ao seu plano.
+                  <p
+                    className="text-muted fs-6 mb-3"
+                    style={{ lineHeight: "1.6" }}
+                  >
+                    Sua assinatura do{" "}
+                    <strong>{assinaturaAtiva?.planoNome}</strong> está ativa (
+                    {assinaturaAtiva?.ciclo === "ANUAL"
+                      ? "Ciclo Anual"
+                      : "Ciclo Mensal"}
+                    ). O período de 30 dias de degustação gratuita foi
+                    automaticamente acumulado ao seu plano.
                   </p>
 
                   <div className="mb-3" style={{ maxWidth: "520px" }}>
                     <div className="d-flex justify-content-between align-items-center mb-1 small fw-semibold text-muted">
                       <span>Vigência Total Acumulada:</span>
                       <span className="text-success fw-bold">
-                        {trialRestante.dias} dias e {trialRestante.horas}h restantes
+                        {trialRestante.dias} dias e {trialRestante.horas}h
+                        restantes
                       </span>
                     </div>
-                    <div className="progress" style={{ height: "8px", borderRadius: "10px" }}>
+                    <div
+                      className="progress"
+                      style={{ height: "8px", borderRadius: "10px" }}
+                    >
                       <div
                         className="progress-bar progress-bar-striped progress-bar-animated bg-success"
                         role="progressbar"
@@ -179,10 +205,19 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
                   </div>
 
                   <div className="d-flex flex-wrap gap-2 pt-1">
-                    <Link to="/agenda-medico" className="btn btn-primary btn-lg px-4 py-2.5 fw-bold shadow-sm d-flex align-items-center gap-2" style={{ borderRadius: "12px" }}>
-                      <i className="bi bi-calendar-plus-fill"></i> Gerenciar Agenda
+                    <Link
+                      to="/agenda-medico"
+                      className="btn btn-primary btn-lg px-4 py-2.5 fw-bold shadow-sm d-flex align-items-center gap-2"
+                      style={{ borderRadius: "12px" }}
+                    >
+                      <i className="bi bi-calendar-plus-fill"></i> Gerenciar
+                      Agenda
                     </Link>
-                    <Link to="/extrato-assinaturas" className="btn btn-outline-secondary btn-lg px-4 py-2.5 fw-semibold" style={{ borderRadius: "12px" }}>
+                    <Link
+                      to="/extrato-assinaturas"
+                      className="btn btn-outline-secondary btn-lg px-4 py-2.5 fw-semibold"
+                      style={{ borderRadius: "12px" }}
+                    >
                       <i className="bi bi-receipt me-1.5"></i> Extrato & Faturas
                     </Link>
                   </div>
@@ -190,53 +225,37 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
               ) : (
                 <>
                   <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                    <span
-                      className={`badge px-3 py-2 rounded-pill fw-bold ${
-                        trialRestante.expirado ? "bg-danger text-white" : "bg-success-subtle text-success border border-success-subtle"
-                      }`}
-                      style={{ fontSize: "0.85rem", letterSpacing: "0.5px" }}
-                    >
-                      <i className={`bi ${trialRestante.expirado ? "bi-exclamation-octagon-fill" : "bi-gift-fill"} me-1.5`}></i>
-                      {trialRestante.expirado ? "PERÍODO DE DEGUSTAÇÃO EXPIRADO" : "30 DIAS GRÁTIS • DEGUSTAÇÃO LIBERADA"}
-                    </span>
                     <span className="badge bg-light text-dark border rounded-pill px-3 py-2 small">
-                      <i className="bi bi-shield-check text-success me-1"></i> CRM Validado
+                      <i className="bi bi-shield-check text-success me-1"></i>{" "}
+                      CRM Validado
                     </span>
                   </div>
 
-                  <h3 className="fw-bold mb-2" style={{ color: "var(--aa-brown)" }}>
-                    {trialRestante.expirado ? "Seu período de teste encerrou" : "Parabéns! Seu CRM foi aprovado 🎉"}
+                  <h3
+                    className="fw-bold mb-2"
+                    style={{ color: "var(--aa-brown)" }}
+                  >
+                    {trialRestante.expirado
+                      ? "Seu período de teste encerrou"
+                      : "Parabéns! Seu CRM foi aprovado 🎉"}
                   </h3>
-                  <p className="text-muted fs-6 mb-3" style={{ lineHeight: "1.6" }}>
+                  <p
+                    className="text-muted fs-6 mb-4"
+                    style={{ lineHeight: "1.6" }}
+                  >
                     {trialRestante.expirado
                       ? "Para continuar atendendo seus pacientes, assine o plano do seu consultório."
-                      : "Você ganhou 30 dias de degustação gratuita para abrir horários e realizar teleconsultas."}
+                      : "Você ganhou 30 dias de degustação gratuita para iniciar seu uso do sistema."}
                   </p>
 
-                  <div className="mb-3" style={{ maxWidth: "520px" }}>
-                    <div className="d-flex justify-content-between align-items-center mb-1 small fw-semibold text-muted">
-                      <span>Tempo restante da degustação:</span>
-                      <span className={trialRestante.expirado ? "text-danger" : "text-success"}>
-                        {trialRestante.expirado ? "0% restante" : `${trialRestante.percentual.toFixed(0)}% restante`}
-                      </span>
-                    </div>
-                    <div className="progress" style={{ height: "8px", borderRadius: "10px" }}>
-                      <div
-                        className={`progress-bar progress-bar-striped progress-bar-animated ${
-                          trialRestante.percentual > 40 ? "bg-success" : trialRestante.percentual > 15 ? "bg-warning" : "bg-danger"
-                        }`}
-                        role="progressbar"
-                        style={{ width: `${trialRestante.percentual}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
                   <div className="d-flex flex-wrap gap-2 pt-1">
-                    <Link to="/planos-medico" className="btn btn-primary btn-lg px-4 py-2.5 fw-bold shadow-sm d-flex align-items-center gap-2" style={{ borderRadius: "12px" }}>
-                      <i className="bi bi-rocket-takeoff-fill"></i> Assinar Consultório Virtual
-                    </Link>
-                    <Link to="/agenda-medico" className="btn btn-outline-secondary btn-lg px-4 py-2.5 fw-semibold" style={{ borderRadius: "12px" }}>
-                      <i className="bi bi-calendar-plus me-1.5"></i> Abrir Horários
+                    <Link
+                      to="/planos-medico"
+                      className="btn btn-primary btn-lg px-4 py-2.5 fw-bold shadow-sm d-flex align-items-center gap-2"
+                      style={{ borderRadius: "12px" }}
+                    >
+                      <i className="bi bi-rocket-takeoff-fill"></i> Assinar
+                      Consultório Virtual
                     </Link>
                   </div>
                 </>
@@ -245,52 +264,176 @@ export function BannerTrialMedico({ user }: BannerTrialMedicoProps) {
 
             {/* Contador visual horizontal */}
             <div className="col-lg-5 col-xl-5 text-center">
-              <div className="p-3 p-sm-4 rounded-4 shadow-sm border bg-white" style={{ borderColor: possuiAssinaturaPaga ? "#bbf7d0" : trialRestante.expirado ? "#fecaca" : "#bbf7d0" }}>
-                <span className="small text-muted fw-bold text-uppercase d-block mb-3" style={{ letterSpacing: "0.5px" }}>
-                  <i className={`bi ${possuiAssinaturaPaga ? "bi-patch-check-fill text-success" : "bi-clock-history text-primary"} me-1`}></i>
-                  {possuiAssinaturaPaga ? "Tempo Total Somado (Degustação + Plano)" : "Contagem Regressiva do Teste Grátis"}
+              <div
+                className="p-3 p-sm-4 rounded-4 shadow-sm border bg-white"
+                style={{
+                  borderColor: possuiAssinaturaPaga
+                    ? "#bbf7d0"
+                    : trialRestante.expirado
+                      ? "#fecaca"
+                      : "#bbf7d0",
+                }}
+              >
+                <span
+                  className="small text-muted fw-bold text-uppercase d-block mb-3"
+                  style={{ letterSpacing: "0.5px" }}
+                >
+                  <i
+                    className={`bi ${possuiAssinaturaPaga ? "bi-patch-check-fill text-success" : "bi-clock-history text-primary"} me-1`}
+                  ></i>
+                  {possuiAssinaturaPaga
+                    ? "Tempo Total Somado (Degustação + Plano)"
+                    : "Contagem Regressiva do Teste Grátis"}
                 </span>
 
-                <div className="d-flex justify-content-center align-items-center mb-3" style={{ gap: "6px", flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+                <div
+                  className="d-flex justify-content-center align-items-center mb-3"
+                  style={{
+                    gap: "6px",
+                    flexWrap: "nowrap",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {/* Dias */}
-                  <div className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: "var(--aa-bg)", border: "1px solid #e5e7eb", width: "68px", minWidth: "68px" }}>
-                    <span className="fw-bold mb-0" style={{ color: "var(--aa-orange)", fontSize: "1.75rem", lineHeight: "1.1", fontVariantNumeric: "tabular-nums" }}>
+                  <div
+                    className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center"
+                    style={{
+                      backgroundColor: "var(--aa-bg)",
+                      border: "1px solid #e5e7eb",
+                      width: "68px",
+                      minWidth: "68px",
+                    }}
+                  >
+                    <span
+                      className="fw-bold mb-0"
+                      style={{
+                        color: "var(--aa-orange)",
+                        fontSize: "1.75rem",
+                        lineHeight: "1.1",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {trialRestante.dias.toString().padStart(2, "0")}
                     </span>
-                    <small className="text-muted fw-bold text-uppercase mt-1" style={{ fontSize: "0.68rem" }}>Dias</small>
+                    <small
+                      className="text-muted fw-bold text-uppercase mt-1"
+                      style={{ fontSize: "0.68rem" }}
+                    >
+                      Dias
+                    </small>
                   </div>
-                  <span className="fw-bold text-muted" style={{ fontSize: "1.3rem" }}>:</span>
+                  <span
+                    className="fw-bold text-muted"
+                    style={{ fontSize: "1.3rem" }}
+                  >
+                    :
+                  </span>
 
                   {/* Horas */}
-                  <div className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: "var(--aa-bg)", border: "1px solid #e5e7eb", width: "68px", minWidth: "68px" }}>
-                    <span className="fw-bold mb-0" style={{ color: "var(--aa-brown)", fontSize: "1.75rem", lineHeight: "1.1", fontVariantNumeric: "tabular-nums" }}>
+                  <div
+                    className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center"
+                    style={{
+                      backgroundColor: "var(--aa-bg)",
+                      border: "1px solid #e5e7eb",
+                      width: "68px",
+                      minWidth: "68px",
+                    }}
+                  >
+                    <span
+                      className="fw-bold mb-0"
+                      style={{
+                        color: "var(--aa-brown)",
+                        fontSize: "1.75rem",
+                        lineHeight: "1.1",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {trialRestante.horas.toString().padStart(2, "0")}
                     </span>
-                    <small className="text-muted fw-bold text-uppercase mt-1" style={{ fontSize: "0.68rem" }}>Horas</small>
+                    <small
+                      className="text-muted fw-bold text-uppercase mt-1"
+                      style={{ fontSize: "0.68rem" }}
+                    >
+                      Horas
+                    </small>
                   </div>
-                  <span className="fw-bold text-muted" style={{ fontSize: "1.3rem" }}>:</span>
+                  <span
+                    className="fw-bold text-muted"
+                    style={{ fontSize: "1.3rem" }}
+                  >
+                    :
+                  </span>
 
                   {/* Minutos */}
-                  <div className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: "var(--aa-bg)", border: "1px solid #e5e7eb", width: "68px", minWidth: "68px" }}>
-                    <span className="fw-bold mb-0" style={{ color: "var(--aa-green)", fontSize: "1.75rem", lineHeight: "1.1", fontVariantNumeric: "tabular-nums" }}>
+                  <div
+                    className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center"
+                    style={{
+                      backgroundColor: "var(--aa-bg)",
+                      border: "1px solid #e5e7eb",
+                      width: "68px",
+                      minWidth: "68px",
+                    }}
+                  >
+                    <span
+                      className="fw-bold mb-0"
+                      style={{
+                        color: "var(--aa-green)",
+                        fontSize: "1.75rem",
+                        lineHeight: "1.1",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {trialRestante.minutos.toString().padStart(2, "0")}
                     </span>
-                    <small className="text-muted fw-bold text-uppercase mt-1" style={{ fontSize: "0.68rem" }}>Min</small>
+                    <small
+                      className="text-muted fw-bold text-uppercase mt-1"
+                      style={{ fontSize: "0.68rem" }}
+                    >
+                      Min
+                    </small>
                   </div>
-                  <span className="fw-bold text-muted" style={{ fontSize: "1.3rem" }}>:</span>
+                  <span
+                    className="fw-bold text-muted"
+                    style={{ fontSize: "1.3rem" }}
+                  >
+                    :
+                  </span>
 
                   {/* Segundos */}
-                  <div className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: "var(--aa-bg)", border: "1px solid #e5e7eb", width: "68px", minWidth: "68px" }}>
-                    <span className="fw-bold mb-0" style={{ color: "var(--aa-orange)", fontSize: "1.75rem", lineHeight: "1.1", fontVariantNumeric: "tabular-nums" }}>
+                  <div
+                    className="text-center rounded-3 p-2 d-flex flex-column align-items-center justify-content-center"
+                    style={{
+                      backgroundColor: "var(--aa-bg)",
+                      border: "1px solid #e5e7eb",
+                      width: "68px",
+                      minWidth: "68px",
+                    }}
+                  >
+                    <span
+                      className="fw-bold mb-0"
+                      style={{
+                        color: "var(--aa-orange)",
+                        fontSize: "1.75rem",
+                        lineHeight: "1.1",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
                       {trialRestante.segundos.toString().padStart(2, "0")}
                     </span>
-                    <small className="text-muted fw-bold text-uppercase mt-1" style={{ fontSize: "0.68rem" }}>Seg</small>
+                    <small
+                      className="text-muted fw-bold text-uppercase mt-1"
+                      style={{ fontSize: "0.68rem" }}
+                    >
+                      Seg
+                    </small>
                   </div>
                 </div>
 
                 <div className="small text-muted py-1 px-2 bg-light rounded-pill border d-inline-block">
                   <i className="bi bi-shield-lock-fill text-success me-1"></i>
-                  {possuiAssinaturaPaga ? "Consultório 100% Ativo e Ilimitado" : "Acesso total liberado durante a degustação"}
+                  {possuiAssinaturaPaga
+                    ? "Consultório 100% Ativo e Ilimitado"
+                    : "Acesso total liberado durante a degustação"}
                 </div>
               </div>
             </div>
