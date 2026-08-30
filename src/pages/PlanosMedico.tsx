@@ -147,6 +147,33 @@ export function PlanosMedico() {
     });
   };
 
+  if (usuarioLogado?.assinaturaAtiva) {
+    return (
+      <main className="container my-5 pb-5 animation-fade-in d-flex align-items-center justify-content-center" style={{ minHeight: "60vh" }}>
+        <div className="card border-0 shadow-sm rounded-4 p-5 text-center w-100" style={{ maxWidth: "600px", borderTop: "6px solid var(--aa-green)" }}>
+          <div className="mb-4">
+            <i className="bi bi-patch-check-fill text-success" style={{ fontSize: "5rem" }}></i>
+          </div>
+          <h2 className="fw-bold mb-3" style={{ color: "var(--aa-brown)" }}>
+            Você já é um Assinante!
+          </h2>
+          <p className="text-muted fs-5 mb-4">
+            O seu Consultório Virtual já está 100% ativo e liberado. Não é necessário realizar uma nova assinatura no momento.
+          </p>
+          <div className="d-flex justify-content-center gap-3">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="btn btn-primary btn-lg px-4 fw-bold shadow-sm"
+              style={{ borderRadius: "12px" }}
+            >
+              <i className="bi bi-grid-fill me-2"></i> Voltar para o Painel
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="container my-5 pb-5 animation-fade-in">
       <header className="text-center mb-5">
@@ -494,7 +521,7 @@ export function PlanosMedico() {
         </div>
       </section>
 
-      <section className="cta-section text-center p-5 rounded-4 mt-5 text-white shadow-sm"> /*Sessão*/
+      <section className="cta-section text-center p-5 rounded-4 mt-5 text-white shadow-sm">
         <h3 className="fw-bold mb-2">
           Pronto para começar seu atendimento digital?
         </h3>
