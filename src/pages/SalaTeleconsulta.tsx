@@ -132,7 +132,12 @@ export function SalaTeleconsulta() {
 
   const encerrarChamadaDeVez = () => {
     if (zpRef.current) {
-      zpRef.current.destroy();
+      try {
+        zpRef.current.destroy();
+      } catch (error) {
+        console.error("Erro ao destruir ZegoCloud:", error);
+      }
+      zpRef.current = null;
     }
   };
 
@@ -152,7 +157,7 @@ export function SalaTeleconsulta() {
         if (dados.finalizar) {
           encerrarChamadaDeVez();
           Swal.fire("Sucesso!", msgSucesso, "success").then(() =>
-            navigate("/dashboard"),
+            window.location.href = "/dashboard",
           );
         } else {
           Swal.fire({
@@ -244,13 +249,13 @@ export function SalaTeleconsulta() {
     }).then((result) => {
       if (result.isConfirmed) {
         encerrarChamadaDeVez();
-        navigate("/dashboard");
+        window.location.href = "/dashboard";
       }
     });
   };
 
-  const myMeeting = async (element: HTMLDivElement | null) => {
-    if (!element || !user || !agendamentoId) return;
+  const myMeeting = (element: HTMLDivElement | null) => {
+    if (!element || !user || !agendamentoId || zpRef.current) return;
 
     const appID = 1711589286;
     const serverSecret = "2b4c79eef006fac989218bd23460ba6c";
@@ -261,8 +266,8 @@ export function SalaTeleconsulta() {
       appID,
       serverSecret,
       roomID,
-      user.id,
-      user.nome,
+      String(user.id),
+      String(user.nome),
     );
 
     zpRef.current = ZegoUIKitPrebuilt.create(kitToken);
@@ -278,7 +283,7 @@ export function SalaTeleconsulta() {
       turnOnCameraWhenJoining: true,
       showLeaveRoomConfirmDialog: false,
       onLeaveRoom: () => {
-        sairDaSala();
+        window.location.href = "/dashboard";
       },
     });
   };
