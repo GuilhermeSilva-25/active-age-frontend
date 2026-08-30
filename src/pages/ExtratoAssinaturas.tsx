@@ -277,7 +277,7 @@ export function ExtratoAssinaturas() {
                   </span>
                   <span
                     className="fs-3 fw-bold"
-                    style={{ color: "var(--aa-orange)" }}
+                    style={{ color: "var(--bs-dark-rgb)" }}
                   >
                     R$ {minhaAssinatura.valor.toFixed(2)}
                   </span>
