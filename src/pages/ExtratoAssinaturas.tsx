@@ -440,7 +440,7 @@ export function ExtratoAssinaturas() {
               </div>
 
               <div className="modal-body p-4 bg-light">
-                <div className="card border p-4 bg-white rounded-3 shadow-sm text-center mb-3">
+                <div id="printable-receipt" className="card border p-4 bg-white rounded-3 shadow-sm text-center mb-3">
                   <img
                     src="/logo.png"
                     alt="Active Age"
@@ -576,6 +576,30 @@ export function ExtratoAssinaturas() {
           }}
         />
       )}
+    
+    <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #printable-receipt, #printable-receipt * {
+            visibility: visible;
+          }
+          #printable-receipt {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .modal-backdrop, .modal-footer, .btn-close {
+            display: none !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
