@@ -252,8 +252,8 @@ export function SalaTeleconsulta() {
   const myMeeting = async (element: HTMLDivElement | null) => {
     if (!element || !user || !agendamentoId) return;
 
-    const appID = 235141838;
-    const serverSecret = "155ea1439ae91e6090cadf178959ec0e";
+    const appID = 1711589286;
+    const serverSecret = "2b4c79eef006fac989218bd23460ba6c";
 
     const roomID = agendamentoId;
 
