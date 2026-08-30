@@ -82,6 +82,12 @@ export function Dashboard() {
             );
             setUser(dadosFresquinhos);
           }
+
+          if (usuarioLogado.tipo !== "ADMIN") {
+            carregarDados(usuarioLogado);
+          } else {
+            carregarPendentes();
+          }
         })
         .catch((erro) =>
           console.error("Sem conexão para atualizar em tempo real.", erro),
@@ -104,7 +110,12 @@ export function Dashboard() {
       );
       if (res.ok) {
         const data = await res.json();
-        setAgendamentos(data);
+        setAgendamentos((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(data)) {
+            return data;
+          }
+          return prev;
+        });
       }
     } catch (error) {
       console.error(error);
@@ -120,7 +131,12 @@ export function Dashboard() {
       );
       if (res.ok) {
         const data = await res.json();
-        setPedidosAdmin(data);
+        setPedidosAdmin((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(data)) {
+            return data;
+          }
+          return prev;
+        });
       }
     } catch (error) {
       console.error("Erro ao buscar pendentes:", error);
