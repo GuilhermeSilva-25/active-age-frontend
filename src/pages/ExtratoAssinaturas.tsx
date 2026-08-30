@@ -35,7 +35,9 @@ export interface AssinaturaMedico {
 export function ExtratoAssinaturas() {
   const navigate = useNavigate();
   const [usuarioLogado, setUsuarioLogado] = useState<any>(null);
-  const [listaAssinaturas, setListaAssinaturas] = useState<AssinaturaMedico[]>([]);
+  const [listaAssinaturas, setListaAssinaturas] = useState<AssinaturaMedico[]>(
+    [],
+  );
 
   const [faturaVisualizada, setFaturaVisualizada] = useState<{
     fatura: Fatura;
@@ -43,7 +45,6 @@ export function ExtratoAssinaturas() {
     medicoCrm: string;
     planoNome: string;
   } | null>(null);
-
 
   const [faturaParaPagar, setFaturaParaPagar] = useState<Fatura | null>(null);
 
@@ -56,16 +57,15 @@ export function ExtratoAssinaturas() {
     const user = JSON.parse(userStr);
     setUsuarioLogado(user);
 
-
     const assinaturasSalvas = localStorage.getItem("activeAgeAssinaturas");
     if (assinaturasSalvas) {
       try {
         const parsed = JSON.parse(assinaturasSalvas);
         const reais = Array.isArray(parsed)
           ? parsed.filter(
-            (ass: AssinaturaMedico) =>
-              !ass.id.startsWith("sub-100") && ass.id !== "sub-meu-perfil"
-          )
+              (ass: AssinaturaMedico) =>
+                !ass.id.startsWith("sub-100") && ass.id !== "sub-meu-perfil",
+            )
           : [];
         setListaAssinaturas(reais);
         localStorage.setItem("activeAgeAssinaturas", JSON.stringify(reais));
@@ -76,14 +76,46 @@ export function ExtratoAssinaturas() {
   }, [navigate]);
 
   const minhaAssinatura = useMemo(() => {
-    if (!usuarioLogado) return null;
-    const encontrada = listaAssinaturas.find(
-      (a) =>
-        a.medicoId === usuarioLogado.id ||
-        a.medicoEmail === usuarioLogado.email
-    );
-    return encontrada || null;
-  }, [usuarioLogado, listaAssinaturas]);
+    if (!usuarioLogado || !usuarioLogado.assinaturaAtiva) return null;
+    const ciclo = localStorage.getItem("activeAgeCicloEscolhido") || "MENSAL";
+    const valorPlano = ciclo === "ANUAL" ? 1908.0 : 199.0;
+    return {
+      id: "sub-" + usuarioLogado.id.substring(0, 8),
+      medicoId: usuarioLogado.id,
+      medicoNome: usuarioLogado.nome,
+      medicoCrm: usuarioLogado.crm || "CRM em validação",
+      medicoEmail: usuarioLogado.email,
+      planoId: "plano-pro",
+      planoNome: "Plano Profissional Pro",
+      ciclo: ciclo,
+      valor: valorPlano,
+      status: "ATIVA",
+      dataInicio: new Date().toLocaleDateString("pt-BR"),
+      proximaCobranca:
+        ciclo === "ANUAL" ? "Daqui a 395 dias" : "Daqui a 60 dias",
+      formaPagamento: "Checkout Pro - Mercado Pago",
+      faturas: [
+        {
+          id: `FAT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          competencia: new Date()
+            .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+            .toUpperCase(),
+          dataEmissao: new Date().toLocaleDateString("pt-BR"),
+          dataPagamento:
+            new Date().toLocaleDateString("pt-BR") +
+            " " +
+            new Date().toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          valor: valorPlano,
+          status: "PAGA",
+          metodo: "Mercado Pago",
+          codigoTransacao: "MP-" + Math.floor(Math.random() * 10000000),
+        },
+      ],
+    };
+  }, [usuarioLogado]);
 
   const renderBadgeStatusAssinatura = (status: string) => {
     switch (status) {
@@ -176,7 +208,8 @@ export function ExtratoAssinaturas() {
             Extrato e Histórico da Minha Assinatura
           </h1>
           <p className="text-muted mb-0">
-            Visualize os dados do seu plano atual, próximas cobranças e histórico de faturas do seu consultório.
+            Visualize os dados do seu plano atual, próximas cobranças e
+            histórico de faturas do seu consultório.
           </p>
         </div>
 
@@ -207,14 +240,17 @@ export function ExtratoAssinaturas() {
             Você ainda não possui uma assinatura ativa
           </h3>
           <p className="text-muted mx-auto mb-4" style={{ maxWidth: "600px" }}>
-            Escolha um dos planos para o seu Consultório Virtual Active Age para começar a atender pacientes online, emitir receitas e gerenciar sua agenda.
+            Escolha um dos planos para o seu Consultório Virtual Active Age para
+            começar a atender pacientes online, emitir receitas e gerenciar sua
+            agenda.
           </p>
           <div>
             <Link
               to="/planos-medico"
               className="btn btn-primary btn-lg px-4 shadow-sm fw-bold"
             >
-              <i className="bi bi-check-circle me-2"></i> Conhecer os Planos Disponíveis
+              <i className="bi bi-check-circle me-2"></i> Conhecer os Planos
+              Disponíveis
             </Link>
           </div>
         </div>
@@ -288,8 +324,8 @@ export function ExtratoAssinaturas() {
           <div className="card shadow-sm border-0 rounded-4 overflow-hidden">
             <div className="card-header bg-light p-3 d-flex justify-content-between align-items-center">
               <h5 className="fw-bold mb-0 text-dark">
-                <i className="bi bi-receipt me-2 text-success"></i>Histórico de Faturas e
-                Comprovantes
+                <i className="bi bi-receipt me-2 text-success"></i>Histórico de
+                Faturas e Comprovantes
               </h5>
               <span className="text-muted small">
                 {minhaAssinatura.faturas.length} registro(s) encontrado(s)
@@ -411,9 +447,7 @@ export function ExtratoAssinaturas() {
                     height="50"
                     className="mx-auto mb-2"
                   />
-                  <h6
-                    className="fw-bold mb-0 text-dark"
-                  >
+                  <h6 className="fw-bold mb-0 text-dark">
                     Active Age Consultório Virtual
                   </h6>
                   <small className="text-muted">
@@ -506,11 +540,11 @@ export function ExtratoAssinaturas() {
                   faturas: a.faturas.map((f) =>
                     f.id === faturaParaPagar.id
                       ? {
-                        ...f,
-                        status: "PAGA" as const,
-                        dataPagamento: new Date().toLocaleString("pt-BR"),
-                      }
-                      : f
+                          ...f,
+                          status: "PAGA" as const,
+                          dataPagamento: new Date().toLocaleString("pt-BR"),
+                        }
+                      : f,
                   ),
                 };
               }
@@ -519,7 +553,7 @@ export function ExtratoAssinaturas() {
             setListaAssinaturas(atualizadas);
             localStorage.setItem(
               "activeAgeAssinaturas",
-              JSON.stringify(atualizadas)
+              JSON.stringify(atualizadas),
             );
             Swal.fire({
               icon: "success",
