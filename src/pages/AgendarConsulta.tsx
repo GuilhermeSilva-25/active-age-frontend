@@ -27,6 +27,13 @@ export function AgendarConsulta() {
     setPacienteId(usuarioLogado.id);
 
     carregarHorariosLivres();
+    
+    // Atualiza automaticamente a cada 5 segundos
+    const intervalId = setInterval(() => {
+      carregarHorariosLivres();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, [medicoId]);
 
   const carregarHorariosLivres = async () => {
