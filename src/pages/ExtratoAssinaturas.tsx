@@ -440,7 +440,10 @@ export function ExtratoAssinaturas() {
               </div>
 
               <div className="modal-body p-4 bg-light">
-                <div id="printable-receipt" className="card border p-4 bg-white rounded-3 shadow-sm text-center mb-3">
+                <div
+                  id="printable-receipt"
+                  className="card border p-4 bg-white rounded-3 shadow-sm text-center mb-3"
+                >
                   <img
                     src="/logo.png"
                     alt="Active Age"
@@ -576,28 +579,43 @@ export function ExtratoAssinaturas() {
           }}
         />
       )}
-    
-    <style>{`
+
+      <style>{`
         @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-receipt, #printable-receipt * {
-            visibility: visible;
-          }
-          #printable-receipt {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
-            border: none !important;
-            box-shadow: none !important;
-          }
-          .modal-backdrop, .modal-footer, .btn-close {
+          nav, footer:not(.mt-auto), .navbar, #root > nav, #root > footer {
             display: none !important;
           }
+
+          body {
+            background-color: white !important;
+          }
+          
+          .container > .border-bottom,
+          .container > .card,
+          .container > h1,
+          .container > p {
+            display: none !important;
+          }
+          
+          .modal-header, .modal-footer, .modal-backdrop {
+            display: none !important;
+          }
+          
+          #printable-receipt {
+            position: fixed !important;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0 !important;
+            padding: 50px !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+            z-index: 9999;
+          }
+          
+          @page { margin: 0; }
         }
       `}</style>
     </main>
