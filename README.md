@@ -16,7 +16,7 @@
 <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
 <img src="https://img.shields.io/badge/Vite-8-purple?style=for-the-badge&logo=vite" alt="Vite" />
 <img src="https://img.shields.io/badge/Bootstrap-5.3-purple?style=for-the-badge&logo=bootstrap" alt="Bootstrap 5" />
-<img src="https://img.shields.io/badge/Mercado_Pago-00B1EA?style=for-the-badge&logo=mercado-pago&logoColor=white%22 alt="Mercado Pago" />
+<img src="https://img.shields.io/badge/Mercado_Pago-00B1EA?style=for-the-badge&logo=mercado-pago&logoColor=white%22" alt="Mercado Pago" />
 <img src="https://img.shields.io/badge/WebRTC-ZegoCloud-333333?style=for-the-badge&logo=webrtc" alt="ZegoCloud WebRTC" />
 </p>
  
