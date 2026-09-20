@@ -25,6 +25,11 @@ interface Agendamento {
   medicoId?: string;
   notaAvaliacao?: number;
   comentarioAvaliacao?: string;
+  valor?: number;
+  valorPago?: number;
+  dataPagamento?: string;
+  metodoPagamento?: string;
+  transacaoPagamentoId?: string;
 }
 
 export function Dashboard() {
@@ -33,6 +38,8 @@ export function Dashboard() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pedidosAdmin, setPedidosAdmin] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [reciboVisualizado, setReciboVisualizado] = useState<Agendamento | null>(null);
+  const extratoRef = useRef<HTMLDivElement>(null);
 
   const historicoRef = useRef<HTMLDivElement>(null);
   const agendaPacienteRef = useRef<HTMLDivElement>(null);
@@ -519,6 +526,58 @@ export function Dashboard() {
     (a) => a.id !== proxima?.id,
   );
 
+  const renderExtratoPagamentos = () => {
+    const pagamentos = agendamentos.filter(a => a.status === "CONFIRMADO" || a.status === "REALIZADO" || (a.valorPago && a.valorPago > 0))
+      .sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime());
+
+    if (pagamentos.length === 0) return null;
+
+    return (
+        <div className="card shadow-sm border-0 mt-4" style={{ borderRadius: "15px" }}>
+          <div className="card-body p-4">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h5 style={{ color: "var(--aa-brown)" }} className="mb-0">
+                <i className="bi bi-receipt me-2"></i>Extrato de Pagamentos
+              </h5>
+              {pagamentos.length > 0 && (
+                <div>
+                  <button className="btn btn-sm btn-light border rounded-circle me-2" onClick={() => scroll(extratoRef, "left")}>
+                    <i className="bi bi-chevron-left"></i>
+                  </button>
+                  <button className="btn btn-sm btn-light border rounded-circle" onClick={() => scroll(extratoRef, "right")}>
+                    <i className="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="horizontal-scroll gap-3 pb-2" ref={extratoRef}>
+              {pagamentos.map(p => (
+                <div key={p.id} className="p-3 border shadow-sm bg-light d-flex flex-column justify-content-between gap-2" style={{ borderRadius: "12px", minWidth: "300px", flex: "0 0 auto" }}>
+                   <div className="d-flex justify-content-between border-bottom pb-2">
+                     <span className="fw-bold text-muted small">Data</span>
+                     <span className="fw-bold text-dark small">{p.dataPagamento ? new Date(p.dataPagamento).toLocaleDateString('pt-BR') : new Date(p.dataHora).toLocaleDateString('pt-BR')}</span>
+                   </div>
+                   <div className="d-flex justify-content-between">
+                     <span className="text-muted small">Médico</span>
+                     <span className="text-dark small fw-semibold text-truncate" style={{maxWidth: "150px"}}>{p.medicoNome}</span>
+                   </div>
+                   <div className="d-flex justify-content-between">
+                     <span className="text-muted small">Valor Pago</span>
+                     <span className="text-success fw-bold">R$ {Number(p.valorPago || p.valor || 180).toFixed(2)}</span>
+                   </div>
+                   
+                   <button className="btn btn-sm btn-outline-primary mt-2 fw-bold" onClick={() => setReciboVisualizado(p)}>
+                     <i className="bi bi-file-earmark-pdf me-1"></i> Ver Recibo
+                   </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+    );
+  };
+
   const renderPaciente = () => (
     <div className="row g-4 animation-fade-in">
       <div className="col-lg-8">
@@ -688,6 +747,7 @@ export function Dashboard() {
         </div>
 
         {renderHistoricoClinico()}
+        {renderExtratoPagamentos()}
       </div>
 
       <div className="col-lg-4 align-self-start d-flex flex-column gap-4">
@@ -1107,7 +1167,104 @@ export function Dashboard() {
         .horizontal-scroll::-webkit-scrollbar {
           display: none; /* Chrome, Safari and Opera */
         }
+
+        @media print {
+          nav, footer:not(.mt-auto), .navbar, #root > nav, #root > footer {
+            display: none !important;
+          }
+
+          body {
+            background-color: white !important;
+          }
+          
+          .container > .border-bottom,
+          .container > .row,
+          .container > h1,
+          .container > p {
+            display: none !important;
+          }
+          
+          .modal-header, .modal-footer, .modal-backdrop {
+            display: none !important;
+          }
+          
+          #printable-receipt {
+            position: fixed !important;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0 !important;
+            padding: 50px !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+            z-index: 9999;
+          }
+          
+          @page { margin: 0; }
+        }
       `}</style>
+
+      {reciboVisualizado && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0, 0, 0, 0.55)", backdropFilter: "blur(4px)" }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+              <div className="modal-header text-white p-3" style={{ backgroundColor: "var(--aa-green)" }}>
+                <h5 className="modal-title fw-bold"><i className="bi bi-receipt-cutoff me-2"></i> Recibo de Consulta</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setReciboVisualizado(null)}></button>
+              </div>
+
+              <div className="modal-body p-4 bg-light">
+                <div id="printable-receipt" className="card border p-4 bg-white rounded-3 shadow-sm text-center mb-3">
+                  <img src="/logo.png" alt="Active Age" height="50" className="mx-auto mb-2" />
+                  <h6 className="fw-bold mb-0 text-dark">Active Age Consultório Virtual</h6>
+                  <small className="text-muted">Comprovante de Agendamento Eletrônico</small>
+
+                  <hr className="my-3" />
+
+                  <div className="text-start small">
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Médico:</span>
+                      <strong>{reciboVisualizado.medicoNome}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">CRM:</span>
+                      <strong>{reciboVisualizado.medicoCrm || 'N/A'}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Paciente:</span>
+                      <strong>{reciboVisualizado.pacienteNome || user?.nome}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Data da Consulta:</span>
+                      <strong>{new Date(reciboVisualizado.dataHora).toLocaleDateString('pt-BR')} às {new Date(reciboVisualizado.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Código da Transação:</span>
+                      <span className="font-monospace text-break" style={{maxWidth: "150px"}}>{reciboVisualizado.transacaoPagamentoId || reciboVisualizado.id}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Data do Pgto:</span>
+                      <span>{reciboVisualizado.dataPagamento ? new Date(reciboVisualizado.dataPagamento).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                    </div>
+
+                    <div className="p-2 bg-light rounded text-center my-3 border">
+                      <span className="text-muted small d-block">VALOR PAGO</span>
+                      <span className="fs-4 fw-bold text-success">R$ {Number(reciboVisualizado.valorPago || reciboVisualizado.valor || 180).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer bg-light p-3">
+                <button type="button" className="btn btn-outline-secondary" onClick={() => setReciboVisualizado(null)}>Fechar</button>
+                <button type="button" className="btn btn-primary fw-bold" onClick={() => window.print()}><i className="bi bi-printer me-1"></i> Imprimir Recibo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
