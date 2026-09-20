@@ -223,14 +223,39 @@ export function AgendarConsulta() {
             ).catch(() => null);
 
             Swal.fire({
-              icon: "info",
-              title: "Pagamento Aberto!",
-              text: "A aba do Mercado Pago foi aberta. Finalize seu pagamento para confirmar o agendamento e liberar a sala de teleconsulta.",
-              confirmButtonColor: "var(--aa-green)",
-              confirmButtonText: "Ir para Meu Painel",
-            }).then(() => {
-              navigate("/dashboard");
+              title: "Aguardando Pagamento...",
+              html: "A aba do Mercado Pago foi aberta. Finalize seu pagamento para confirmar o agendamento.<br/><br/><b>Não feche esta tela!</b> Estamos aguardando a confirmação...",
+              allowOutsideClick: false,
+              didOpen: () => {
+                Swal.showLoading();
+              },
             });
+
+            const intervalo = setInterval(async () => {
+              try {
+                const res = await fetch(
+                  `https://active-age-backend.onrender.com/api/agendamentos/paciente/${pacienteId}`
+                );
+                if (res.ok) {
+                  const agendamentos = await res.json();
+                  const agendamentoAtualizado = agendamentos.find((a: any) => a.id === h.id);
+                  if (agendamentoAtualizado && agendamentoAtualizado.status === "CONFIRMADO") {
+                    clearInterval(intervalo);
+                    Swal.fire({
+                      icon: "success",
+                      title: "Pagamento Confirmado!",
+                      text: "Sua teleconsulta foi agendada com sucesso.",
+                      confirmButtonColor: "var(--aa-green)",
+                      confirmButtonText: "Ir para Meu Painel",
+                    }).then(() => {
+                      navigate("/dashboard");
+                    });
+                  }
+                }
+              } catch (err) {
+                console.error("Erro ao checar status do pagamento", err);
+              }
+            }, 3000);
           } else {
             Swal.fire(
               "Erro",
