@@ -156,3 +156,5 @@ active-age-frontend/
 ## 📄 Licença
  
 Este projeto foi desenvolvido como um sistema acadêmico focado em inovação para saúde digital e arquitetura de microserviços.
+
+ 

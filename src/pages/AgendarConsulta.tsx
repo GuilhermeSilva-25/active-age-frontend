@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { ModalPagamentoMercadoPago } from "../components/pagamento/ModalPagamentoMercadoPago";
 
 interface Agendamento {
   id: string;
@@ -37,15 +36,6 @@ export function AgendarConsulta() {
     valorConsulta: 180,
     orientacoes: "",
   });
-
-  const [isModalPagamentoOpen, setIsModalPagamentoOpen] = useState(false);
-  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<{
-    id: string;
-    dataHora: string;
-    dataHoraFormatada: string;
-    valor: number;
-    duracao: number;
-  } | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem("activeAgeUser");
@@ -193,81 +183,70 @@ export function AgendarConsulta() {
       cancelButtonColor: "var(--aa-brown)",
       confirmButtonText: "Prosseguir para Pagamento",
       cancelButtonText: "Voltar",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        setAgendamentoSelecionado({
-          id: h.id,
-          dataHora: h.dataHora,
-          dataHoraFormatada: `${dataObj.toLocaleDateString("pt-BR")} às ${horaFormatada}`,
-          valor: Number(infoDestaConsulta.valor || 0),
-          duracao: Number(infoDestaConsulta.duracao || 45),
-        });
+        try {
+          Swal.fire({
+            title: "Conectando ao Mercado Pago...",
+            text: "Aguarde enquanto geramos o link de pagamento.",
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+          });
 
-        setIsModalPagamentoOpen(true);
+          const valorFinal = Number(infoDestaConsulta.valor || 180);
+
+          const response = await fetch(
+            "https://active-age-payment-service.onrender.com/api/payments/create",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                amount: valorFinal,
+                description: `Teleconsulta com ${medico?.nome || "Médico Especialista"}`,
+                payerEmail: pacienteLogado?.email || "paciente@teste.com",
+                type: "CONSULTATION",
+                referenceId: `AGEND-${h.id}`,
+              }),
+            },
+          );
+
+          const data = await response.json();
+          if (data.checkoutUrl) {
+            Swal.close();
+            window.open(data.checkoutUrl, "_blank");
+
+            await fetch(
+              `https://active-age-backend.onrender.com/api/agendamentos/marcar/${h.id}/paciente/${pacienteId}`,
+              { method: "PUT" },
+            ).catch(() => null);
+
+            Swal.fire({
+              icon: "info",
+              title: "Pagamento Aberto!",
+              text: "A aba do Mercado Pago foi aberta. Finalize seu pagamento para confirmar o horário da consulta.",
+              confirmButtonColor: "var(--aa-green)",
+              confirmButtonText: "Ir para Meu Painel",
+            }).then(() => {
+              navigate("/dashboard");
+            });
+          } else {
+            Swal.fire(
+              "Erro",
+              data?.message || "Não foi possível gerar o link de pagamento.",
+              "error",
+            );
+          }
+        } catch (error) {
+          Swal.fire(
+            "Erro",
+            "Erro ao conectar com o serviço de pagamentos.",
+            "error",
+          );
+        }
       }
     });
-  };
-
-  const handlePagamentoSucesso = async (detalhes: any) => {
-    if (!agendamentoSelecionado) return;
-
-    try {
-      await fetch(
-        `https://active-age-backend.onrender.com/api/agendamentos/${agendamentoSelecionado.id}/pagamento/confirmar`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transacaoId: detalhes?.id || `MP-${Date.now()}`,
-            metodo: detalhes?.metodo || "MERCADO_PAGO",
-            valorPago: agendamentoSelecionado.valor,
-          }),
-        },
-      ).catch(() => null);
-
-      const res = await fetch(
-        `https://active-age-backend.onrender.com/api/agendamentos/marcar/${agendamentoSelecionado.id}/paciente/${pacienteId}`,
-        { method: "PUT" },
-      );
-
-      if (res.ok) {
-        setIsModalPagamentoOpen(false);
-        Swal.fire({
-          icon: "success",
-          title: "Teleconsulta Confirmada!",
-          html: `
-            <div class="text-center">
-              <p class="mb-2">O pagamento de <b>R$ ${agendamentoSelecionado.valor.toFixed(2)}</b> foi aprovado via <b>${detalhes.metodo || "Mercado Pago"}</b>.</p>
-              <p class="small text-muted mb-0">Horário confirmado: <b>${agendamentoSelecionado.dataHoraFormatada}</b> com <b>${medico?.nome || "seu médico"}</b>.</p>
-            </div>
-          `,
-          confirmButtonColor: "var(--aa-green)",
-          confirmButtonText: "Ir para Meu Painel",
-        }).then(() => {
-          navigate("/dashboard");
-        });
-      } else {
-        const errorData = await res.json().catch(() => null);
-        const mensagemErro =
-          errorData?.message ||
-          "Você já possui uma consulta marcada neste horário!";
-
-        Swal.fire({
-          icon: "error",
-          title: "Não foi possível confirmar o agendamento",
-          text: mensagemErro,
-          confirmButtonColor: "var(--aa-orange)",
-        });
-        carregarHorariosLivres();
-      }
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Erro de Conexão",
-        text: "Falha ao confirmar agendamento com o servidor.",
-        confirmButtonColor: "var(--aa-orange)",
-      });
-    }
   };
 
   const demonstrarInteresse = () => {
@@ -585,35 +564,6 @@ export function AgendarConsulta() {
           </div>
         </div>
       </section>
-
-      {agendamentoSelecionado && (
-        <ModalPagamentoMercadoPago
-          isOpen={isModalPagamentoOpen}
-          onClose={() => setIsModalPagamentoOpen(false)}
-          onSuccess={handlePagamentoSucesso}
-          tipoItem="CONSULTA"
-          plano={{
-            id: agendamentoSelecionado.id,
-            nome: `Teleconsulta com ${medico?.nome || "Médico Especialista"}`,
-            valor: agendamentoSelecionado.valor,
-            tipo: "CONSULTA",
-            ciclo: "CONSULTA",
-            dataHoraFormatada: agendamentoSelecionado.dataHoraFormatada,
-            duracaoMinutos: agendamentoSelecionado.duracao,
-          }}
-          medico={{
-            id: medico?.id,
-            nome: medico?.nome,
-            email: medico?.email,
-            crm: medico?.crm,
-          }}
-          paciente={{
-            id: pacienteLogado?.id,
-            nome: pacienteLogado?.nome,
-            email: pacienteLogado?.email,
-          }}
-        />
-      )}
 
       <style>{`
         .animation-fade-in {
