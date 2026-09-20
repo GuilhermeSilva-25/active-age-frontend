@@ -258,16 +258,17 @@ export function Dashboard() {
   };
 
   const handleCancelar = async (id: string) => {
+    const isPaciente = user?.tipo === "PACIENTE";
     Swal.fire({
-      title: "Deseja cancelar?",
-      text:
-        user?.tipo === "PACIENTE"
-          ? "O horário voltará para a agenda do médico."
-          : "Este horário será invalidado.",
+      title: "Deseja cancelar a consulta?",
+      html: isPaciente
+          ? "O horário voltará para a agenda do médico.<br/><br/><b>Aviso de Reembolso:</b> Caso você já tenha pago, o estorno será processado automaticamente pelo Mercado Pago e devolvido na sua conta bancária ou cartão em até 3 dias úteis."
+          : "Este horário será invalidado e removido da sua agenda.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
-      confirmButtonText: "Sim, cancelar",
+      cancelButtonColor: "var(--aa-brown)",
+      confirmButtonText: "Sim, cancelar consulta",
       cancelButtonText: "Voltar",
     }).then(async (result) => {
       if (result.isConfirmed && user) {
