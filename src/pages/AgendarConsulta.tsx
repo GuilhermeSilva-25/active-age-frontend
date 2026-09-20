@@ -7,6 +7,8 @@ interface Agendamento {
   id: string;
   dataHora: string;
   status: string;
+  valor?: number;
+  duracaoMinutos?: number;
 }
 
 export interface DetalheConsulta {
@@ -140,6 +142,13 @@ export function AgendarConsulta() {
   };
 
   const obterInfoDesteHorario = (id: string, dataHora: string): DetalheConsulta => {
+    const horarioEncontrado = horarios.find((item) => item.id === id);
+    if (horarioEncontrado?.valor !== undefined && horarioEncontrado?.valor !== null) {
+      return {
+        valor: Number(horarioEncontrado.valor),
+        duracao: Number(horarioEncontrado.duracaoMinutos) || 45,
+      };
+    }
     if (detalhesHorarios[id]) return detalhesHorarios[id];
     if (detalhesHorarios[dataHora]) return detalhesHorarios[dataHora];
     return {
@@ -203,6 +212,19 @@ export function AgendarConsulta() {
     if (!agendamentoSelecionado) return;
 
     try {
+      await fetch(
+        `https://active-age-backend.onrender.com/api/agendamentos/${agendamentoSelecionado.id}/pagamento/confirmar`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transacaoId: detalhes?.id || `MP-${Date.now()}`,
+            metodo: detalhes?.metodo || "MERCADO_PAGO",
+            valorPago: agendamentoSelecionado.valor,
+          }),
+        },
+      ).catch(() => null);
+
       const res = await fetch(
         `https://active-age-backend.onrender.com/api/agendamentos/marcar/${agendamentoSelecionado.id}/paciente/${pacienteId}`,
         { method: "PUT" },

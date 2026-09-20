@@ -7,6 +7,8 @@ interface Agendamento {
   dataHora: string;
   status: string;
   pacienteId: string | null;
+  valor?: number;
+  duracaoMinutos?: number;
 }
 
 interface Usuario {
@@ -79,6 +81,13 @@ export function AgendaMedico() {
   };
 
   const obterInfoDesteHorario = (id: string, dataHora: string): DetalheConsulta => {
+    const horarioEncontrado = horarios.find((item) => item.id === id);
+    if (horarioEncontrado?.valor !== undefined && horarioEncontrado?.valor !== null) {
+      return {
+        valor: Number(horarioEncontrado.valor),
+        duracao: Number(horarioEncontrado.duracaoMinutos) || 45,
+      };
+    }
     if (detalhesHorarios[id]) return detalhesHorarios[id];
     if (detalhesHorarios[dataHora]) return detalhesHorarios[dataHora];
     return {
@@ -139,7 +148,11 @@ export function AgendaMedico() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ horarios: [novoHorarioIso] }),
+          body: JSON.stringify({
+            horarios: [novoHorarioIso],
+            valor: valorNum,
+            duracaoMinutos: duracaoNum,
+          }),
         },
       );
 
