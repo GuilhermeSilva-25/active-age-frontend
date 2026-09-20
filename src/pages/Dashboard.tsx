@@ -504,7 +504,11 @@ export function Dashboard() {
 
   const agendamentosFuturos = agendamentos
     .filter(
-      (a) => a.status === "AGENDADO" && new Date(a.dataHora) >= new Date(),
+      (a) =>
+        (a.status === "AGENDADO" ||
+          a.status === "CONFIRMADO" ||
+          a.status === "AGUARDANDO_PAGAMENTO") &&
+        new Date(a.dataHora) >= new Date(),
     )
     .sort(
       (a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime(),
@@ -540,19 +544,40 @@ export function Dashboard() {
                     {proxima.medicoEspecializacao || "Geriatria"} | CRM:{" "}
                     {proxima.medicoCrm || "N/A"}
                   </p>
-                  <p className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill">
-                    <i className="bi bi-clock-fill text-primary me-2"></i>
-                    {formatarDataHora(proxima.dataHora).dia} às{" "}
-                    {formatarDataHora(proxima.dataHora).hora}
-                  </p>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <p className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill mb-0">
+                      <i className="bi bi-clock-fill text-primary me-2"></i>
+                      {formatarDataHora(proxima.dataHora).dia} às{" "}
+                      {formatarDataHora(proxima.dataHora).hora}
+                    </p>
+                    {proxima.status === "AGUARDANDO_PAGAMENTO" ? (
+                      <span className="badge bg-warning text-dark border border-warning fs-6 px-3 py-2 rounded-pill">
+                        <i className="bi bi-hourglass-split me-1"></i>Aguardando Pagamento
+                      </span>
+                    ) : (
+                      <span className="badge bg-success bg-opacity-10 text-success border border-success fs-6 px-3 py-2 rounded-pill">
+                        <i className="bi bi-check-circle-fill me-1"></i>Confirmada
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="d-flex flex-column gap-2 align-items-stretch">
-                  <Link
-                    to={`/sala/${proxima.id}`}
-                    className="btn btn-primary shadow-sm btn-lg fw-bold"
-                  >
-                    <i className="bi bi-camera-video me-2"></i>Entrar na Sala
-                  </Link>
+                  {proxima.status === "AGUARDANDO_PAGAMENTO" ? (
+                    <button
+                      className="btn btn-secondary shadow-sm btn-lg fw-bold"
+                      disabled
+                      title="A sala de teleconsulta só é liberada após a confirmação do pagamento."
+                    >
+                      <i className="bi bi-lock-fill me-2"></i>Aguardando Pagamento
+                    </button>
+                  ) : (
+                    <Link
+                      to={`/sala/${proxima.id}`}
+                      className="btn btn-primary shadow-sm btn-lg fw-bold"
+                    >
+                      <i className="bi bi-camera-video me-2"></i>Entrar na Sala
+                    </Link>
+                  )}
                   <button
                     className="btn btn-outline-danger shadow-sm"
                     onClick={() => handleCancelar(proxima.id)}
@@ -626,11 +651,20 @@ export function Dashboard() {
                         {a.medicoEspecializacao || "Geriatria"} &nbsp;|&nbsp;
                         CRM: {a.medicoCrm || "N/A"}
                       </div>
-                      <span className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill d-inline-block w-100 text-center">
+                      <span className="badge bg-primary bg-opacity-10 text-primary border border-primary fs-6 px-3 py-2 rounded-pill d-inline-block w-100 text-center mb-2">
                         <i className="bi bi-clock-fill me-2"></i>
                         {formatarDataHora(a.dataHora).dia} às{" "}
                         {formatarDataHora(a.dataHora).hora}
                       </span>
+                      {a.status === "AGUARDANDO_PAGAMENTO" ? (
+                        <span className="badge bg-warning text-dark border border-warning fs-6 px-3 py-2 rounded-pill d-inline-block w-100 text-center">
+                          <i className="bi bi-hourglass-split me-1"></i>Aguardando Pagamento
+                        </span>
+                      ) : (
+                        <span className="badge bg-success bg-opacity-10 text-success border border-success fs-6 px-3 py-2 rounded-pill d-inline-block w-100 text-center">
+                          <i className="bi bi-check-circle-fill me-1"></i>Confirmada
+                        </span>
+                      )}
                     </div>
                     <div>
                       <button
@@ -713,7 +747,7 @@ export function Dashboard() {
                     <i className="bi bi-calendar-check me-2"></i>Meus Próximos
                     Atendimentos
                   </h4>
-                  {agendamentos.filter((a) => a.status === "AGENDADO").length >
+                  {agendamentos.filter((a) => a.status === "AGENDADO" || a.status === "CONFIRMADO" || a.status === "AGUARDANDO_PAGAMENTO").length >
                     0 && (
                     <div>
                       <button
@@ -732,14 +766,14 @@ export function Dashboard() {
                   )}
                 </div>
 
-                {agendamentos.filter((a) => a.status === "AGENDADO").length >
+                {agendamentos.filter((a) => a.status === "AGENDADO" || a.status === "CONFIRMADO" || a.status === "AGUARDANDO_PAGAMENTO").length >
                 0 ? (
                   <div
                     className="horizontal-scroll gap-3 pb-2"
                     ref={agendaMedicoRef}
                   >
                     {agendamentos
-                      .filter((a) => a.status === "AGENDADO")
+                      .filter((a) => a.status === "AGENDADO" || a.status === "CONFIRMADO" || a.status === "AGUARDANDO_PAGAMENTO")
                       .sort(
                         (a, b) =>
                           new Date(a.dataHora).getTime() -
@@ -765,16 +799,36 @@ export function Dashboard() {
                               <i className="bi bi-person-fill me-2 text-primary"></i>
                               {a.pacienteNome || "Paciente Identificado"}
                             </span>
+                            {a.status === "AGUARDANDO_PAGAMENTO" ? (
+                              <span className="badge bg-warning text-dark border border-warning fs-6 px-3 py-1 rounded-pill d-inline-block mt-2">
+                                <i className="bi bi-hourglass-split me-1"></i>Aguardando Pagamento
+                              </span>
+                            ) : (
+                              <span className="badge bg-success bg-opacity-10 text-success border border-success fs-6 px-3 py-1 rounded-pill d-inline-block mt-2">
+                                <i className="bi bi-check-circle-fill me-1"></i>Confirmada
+                              </span>
+                            )}
                           </div>
 
                           <div className="d-flex flex-column gap-2">
-                            <Link
-                              to={`/sala/${a.id}`}
-                              className="btn btn-primary w-100 shadow-sm fw-bold"
-                            >
-                              <i className="bi bi-camera-video me-2"></i>{" "}
-                              Iniciar Chamada
-                            </Link>
+                            {a.status === "AGUARDANDO_PAGAMENTO" ? (
+                              <button
+                                className="btn btn-secondary w-100 shadow-sm fw-bold"
+                                disabled
+                                title="Aguardando confirmação do pagamento pelo paciente."
+                              >
+                                <i className="bi bi-lock-fill me-2"></i>{" "}
+                                Aguardando Pagamento
+                              </button>
+                            ) : (
+                              <Link
+                                to={`/sala/${a.id}`}
+                                className="btn btn-primary w-100 shadow-sm fw-bold"
+                              >
+                                <i className="bi bi-camera-video me-2"></i>{" "}
+                                Iniciar Chamada
+                              </Link>
+                            )}
                             <button
                               className="btn btn-outline-danger w-100 shadow-sm fw-bold"
                               onClick={() => handleCancelar(a.id)}

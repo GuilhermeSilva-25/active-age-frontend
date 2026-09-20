@@ -88,6 +88,19 @@ export function SalaTeleconsulta() {
         );
 
         if (consultaAtual) {
+          if (consultaAtual.status === "AGUARDANDO_PAGAMENTO") {
+            Swal.fire({
+              icon: "warning",
+              title: "Pagamento Pendente",
+              text: "Esta consulta está aguardando a confirmação do pagamento para liberação da sala.",
+              confirmButtonColor: "var(--aa-green)",
+              confirmButtonText: "Ir para o Painel",
+            }).then(() => {
+              navigate("/dashboard");
+            });
+            return;
+          }
+
           setAgendamento(consultaAtual);
 
           if (usuarioLogado.tipo === "MEDICO" && consultaAtual.pacienteId) {

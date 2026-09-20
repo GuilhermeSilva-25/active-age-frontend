@@ -225,7 +225,7 @@ export function AgendarConsulta() {
             Swal.fire({
               icon: "info",
               title: "Pagamento Aberto!",
-              text: "A aba do Mercado Pago foi aberta. Finalize seu pagamento para confirmar o horário da consulta.",
+              text: "A aba do Mercado Pago foi aberta. Finalize seu pagamento para confirmar o agendamento e liberar a sala de teleconsulta.",
               confirmButtonColor: "var(--aa-green)",
               confirmButtonText: "Ir para Meu Painel",
             }).then(() => {
