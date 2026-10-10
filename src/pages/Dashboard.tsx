@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { BannerTrialMedico } from "../components/BannerTrialMedico";
+import { ModalPagamentoMercadoPago } from "../components/pagamento/ModalPagamentoMercadoPago";
 
 interface Usuario {
   id: string;
@@ -39,6 +40,7 @@ export function Dashboard() {
   const [pedidosAdmin, setPedidosAdmin] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [reciboVisualizado, setReciboVisualizado] = useState<Agendamento | null>(null);
+  const [consultaParaPagar, setConsultaParaPagar] = useState<Agendamento | null>(null);
   const extratoRef = useRef<HTMLDivElement>(null);
 
   const historicoRef = useRef<HTMLDivElement>(null);
@@ -60,12 +62,181 @@ export function Dashboard() {
     if (usuarioLogado.tipo === "ADMIN") carregarPendentes();
     else carregarDados(usuarioLogado);
 
+    // ========================================================
+    // PROCESSAMENTO DO RETORNO DE PAGAMENTO DO MERCADO PAGO
+    // ========================================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const mpStatus =
+      urlParams.get("status") || urlParams.get("collection_status");
+    const mpPaymentId =
+      urlParams.get("payment_id") ||
+      urlParams.get("collection_id") ||
+      `MP-${Date.now()}`;
+    const mpItemId = urlParams.get("item_id");
+    const mpTipo = urlParams.get("tipo");
+
+    if (mpStatus === "approved") {
+      let pagamentoPendente: any = null;
+      try {
+        const salvo = localStorage.getItem("activeAgeUltimoPagamento");
+        if (salvo) pagamentoPendente = JSON.parse(salvo);
+      } catch (e) {
+        console.error("Erro ao ler pagamento pendente:", e);
+      }
+
+      const itemId = mpItemId || pagamentoPendente?.itemId;
+      const tipoItem = mpTipo || pagamentoPendente?.tipoItem;
+      const valorEsperado = Number(pagamentoPendente?.valor || 180);
+      const refId =
+        tipoItem === "CONSULTA" ||
+        (!tipoItem && usuarioLogado.tipo === "PACIENTE")
+          ? `AGEND-${itemId}`
+          : `MED-${pagamentoPendente?.medicoId || usuarioLogado.id}`;
+
+      // Validação de segurança: checar status e valor com Mercado Pago
+      const validarEConfirmar = async () => {
+        let aprovadoVerificado = false;
+        let valorRealPago = valorEsperado;
+
+        try {
+          const resp = await fetch(
+            `http://localhost:8081/api/payments/verify?referenceId=${encodeURIComponent(
+              refId
+            )}&paymentId=${encodeURIComponent(
+              mpPaymentId
+            )}&expectedAmount=${valorEsperado}`
+          );
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.valid) {
+              aprovadoVerificado = true;
+              valorRealPago = data.amountPaid || valorEsperado;
+            }
+          }
+        } catch (e) {
+          // Fallback caso microserviço esteja offline
+          aprovadoVerificado = Boolean(mpPaymentId && !mpPaymentId.startsWith("MP-"));
+        }
+
+        if (!aprovadoVerificado) {
+          Swal.fire({
+            icon: "warning",
+            title: "Aguardando Confirmação do Mercado Pago",
+            text: "O pagamento ainda não foi identificado como aprovado pelo Mercado Pago. Por favor, conclua a transação.",
+            confirmButtonColor: "#009ee3",
+          });
+          return;
+        }
+
+        // Se estiver rodando dentro do iframe integrado, notifica a janela principal
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(
+            { type: "MERCADO_PAGO_APPROVED", paymentId: mpPaymentId },
+            "*"
+          );
+        }
+
+        if (itemId) {
+          if (
+            tipoItem === "CONSULTA" ||
+            (!tipoItem && usuarioLogado.tipo === "PACIENTE")
+          ) {
+            // Confirmar teleconsulta
+            const endpointMarcar = `https://active-age-backend.onrender.com/api/agendamentos/marcar/${itemId}/paciente/${usuarioLogado.id}`;
+            const endpointConfirmar = `https://active-age-backend.onrender.com/api/agendamentos/${itemId}/confirmar-pagamento`;
+
+            fetch(endpointMarcar, { method: "PUT" })
+              .catch(() => null)
+              .finally(() => {
+                fetch(endpointConfirmar, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    transacaoId: mpPaymentId,
+                    metodo: "Mercado Pago",
+                    valorPago: valorRealPago,
+                    dataPagamento: new Date().toISOString(),
+                  }),
+                })
+                  .then(() => {
+                    Swal.fire({
+                      icon: "success",
+                      title: "Pagamento Aprovado no Mercado Pago!",
+                      text: "Sua teleconsulta foi confirmada e sua sala virtual está liberada!",
+                      confirmButtonColor: "var(--aa-green)",
+                    });
+                    carregarDados(usuarioLogado);
+                  })
+                  .catch((err) => {
+                    console.error("Erro ao confirmar pagamento retornado:", err);
+                  });
+              });
+          } else {
+            // Ativar plano do médico
+            const medicoId = pagamentoPendente?.medicoId || usuarioLogado.id;
+            fetch(
+              `https://active-age-backend.onrender.com/api/usuarios/medicos/MED-${medicoId}/assinatura/ativar`,
+              {
+                method: "PUT",
+              }
+            )
+              .then(() => {
+                Swal.fire({
+                  icon: "success",
+                  title: "Assinatura Ativada!",
+                  text: "Seu plano foi ativado com sucesso pelo Mercado Pago!",
+                  confirmButtonColor: "var(--aa-green)",
+                });
+                carregarDados(usuarioLogado);
+              })
+              .catch((err) => {
+                console.error("Erro ao ativar assinatura retornada:", err);
+              });
+          }
+        } else {
+          Swal.fire({
+            icon: "success",
+            title: "Pagamento Concluído!",
+            text: "Seu pagamento via Mercado Pago foi processado com sucesso.",
+            confirmButtonColor: "var(--aa-green)",
+          });
+          carregarDados(usuarioLogado);
+        }
+
+        localStorage.removeItem("activeAgeUltimoPagamento");
+        window.history.replaceState({}, document.title, window.location.pathname);
+      };
+
+      validarEConfirmar();
+    } else if (mpStatus === "failure" || mpStatus === "rejected") {
+      Swal.fire({
+        icon: "error",
+        title: "Pagamento Não Concluído",
+        text: "O pagamento no Mercado Pago foi cancelado ou recusado.",
+        confirmButtonColor: "#009ee3",
+      });
+      localStorage.removeItem("activeAgeUltimoPagamento");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (mpStatus === "pending" || mpStatus === "in_process") {
+      Swal.fire({
+        icon: "info",
+        title: "Pagamento Pendente",
+        text: "Seu pagamento no Mercado Pago está sendo processado. Assim que aprovado, sua consulta será liberada.",
+        confirmButtonColor: "#009ee3",
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const checarNovidades = () => {
       fetch(
         `https://active-age-backend.onrender.com/api/usuarios/${usuarioLogado.id}`,
       )
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) return null;
+          return res.json();
+        })
         .then((dadosFresquinhos) => {
+          if (!dadosFresquinhos) return;
           if (
             dadosFresquinhos.tipo === "MEDICO" &&
             !dadosFresquinhos.statusValidacao
@@ -96,9 +267,9 @@ export function Dashboard() {
             carregarPendentes();
           }
         })
-        .catch((erro) =>
-          console.error("Sem conexão para atualizar em tempo real.", erro),
-        );
+        .catch(() => {
+          // Servidor em cold-start ou offline momentaneamente
+        });
     };
 
     checarNovidades();
@@ -624,11 +795,11 @@ export function Dashboard() {
                 <div className="d-flex flex-column gap-2 align-items-stretch">
                   {proxima.status === "AGUARDANDO_PAGAMENTO" ? (
                     <button
-                      className="btn btn-secondary shadow-sm btn-lg fw-bold"
-                      disabled
-                      title="A sala de teleconsulta só é liberada após a confirmação do pagamento."
+                      className="btn btn-warning shadow-sm btn-lg fw-bold text-dark"
+                      onClick={() => setConsultaParaPagar(proxima)}
+                      title="Clique para realizar o pagamento nativo e liberar sua teleconsulta."
                     >
-                      <i className="bi bi-lock-fill me-2"></i>Aguardando Pagamento
+                      <i className="bi bi-credit-card-2-front me-2"></i>Pagar Consulta Agora
                     </button>
                   ) : (
                     <Link
@@ -717,9 +888,12 @@ export function Dashboard() {
                         {formatarDataHora(a.dataHora).hora}
                       </span>
                       {a.status === "AGUARDANDO_PAGAMENTO" ? (
-                        <span className="badge bg-warning text-dark border border-warning fs-6 px-3 py-2 rounded-pill d-inline-block w-100 text-center">
-                          <i className="bi bi-hourglass-split me-1"></i>Aguardando Pagamento
-                        </span>
+                        <button
+                          className="btn btn-sm btn-warning fw-bold text-dark w-100 shadow-sm"
+                          onClick={() => setConsultaParaPagar(a)}
+                        >
+                          <i className="bi bi-credit-card-2-front me-1"></i>Pagar Consulta Pendente
+                        </button>
                       ) : (
                         <span className="badge bg-success bg-opacity-10 text-success border border-success fs-6 px-3 py-2 rounded-pill d-inline-block w-100 text-center">
                           <i className="bi bi-check-circle-fill me-1"></i>Confirmada
@@ -1265,6 +1439,48 @@ export function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+      {/* MODAL NATIVO DE PAGAMENTO PARA CONSULTA PENDENTE */}
+      {consultaParaPagar && user && (
+        <ModalPagamentoMercadoPago
+          isOpen={!!consultaParaPagar}
+          onClose={() => setConsultaParaPagar(null)}
+          onSuccess={(detalhes) => {
+            setConsultaParaPagar(null);
+            Swal.fire({
+              icon: "success",
+              title: "Pagamento Confirmado!",
+              text: `Consulta confirmada com sucesso via ${detalhes.metodo}. Sua sala de vídeo já está liberada!`,
+              confirmButtonColor: "var(--aa-green)",
+            });
+            carregarDados(user);
+          }}
+          tipoItem="CONSULTA"
+          plano={{
+            id: consultaParaPagar.id,
+            nome: `Teleconsulta com ${consultaParaPagar.medicoNome || "Médico Especialista"}`,
+            valor: Number(consultaParaPagar.valor || 180),
+            ciclo: "CONSULTA",
+            tipo: "CONSULTA",
+            dataHoraFormatada: new Date(consultaParaPagar.dataHora).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          }}
+          medico={{
+            id: consultaParaPagar.medicoId,
+            nome: consultaParaPagar.medicoNome,
+            crm: consultaParaPagar.medicoCrm,
+          }}
+          paciente={{
+            id: user.id,
+            nome: user.nome,
+            email: user.email,
+          }}
+        />
       )}
     </main>
   );

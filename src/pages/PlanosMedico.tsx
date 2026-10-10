@@ -81,67 +81,37 @@ export function PlanosMedico() {
     }
   }, []);
 
-  const handleAssinar = async (plano: PlanoConsultorio) => {
-    try {
+  const handleAssinar = (plano: PlanoConsultorio) => {
+    if (!usuarioLogado) {
       Swal.fire({
-        title: "Conectando ao Mercado Pago...",
-        text: "Aguarde enquanto geramos o link de pagamento.",
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      const valorFinal = cicloCobranca === "MENSAL" ? parseFloat(plano.precoMensal) : parseFloat(plano.precoAnual) * 12;
-
-      localStorage.setItem("activeAgeCicloEscolhido", cicloCobranca);
-
-      const response = await fetch(
-        "https://active-age-payment-service.onrender.com/api/payments/create",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: 
-            parseFloat(valorFinal),
-            description: "Assinatura " + plano.nome,
-            payerEmail: usuarioLogado?.email || "medico@teste.com",
-            type: "SUBSCRIPTION",
-            referenceId: "MED-" + usuarioLogado?.id,
-          }),
-        },
-      );
-
-      const data = await response.json();
-      if (data.checkoutUrl) {
-        Swal.close();
-        window.open(data.checkoutUrl, '_blank');      
-        navigate("/dashboard");
-      } else {
-        Swal.fire(
-          "Erro",
-          "Não foi possível gerar o link de pagamento.",
-          "error",
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      Swal.fire(
-        "Erro",
-        "Erro ao conectar com o serviço de pagamentos.",
-        "error",
-      );
+        icon: "warning",
+        title: "Identificação Necessária",
+        text: "Faça login na sua conta médica para assinar um plano.",
+        confirmButtonColor: "var(--aa-orange)",
+      }).then(() => navigate("/login"));
+      return;
     }
+
+    localStorage.setItem("activeAgeCicloEscolhido", cicloCobranca);
+    setPlanoSelecionado(plano);
+    setIsModalPagamentoOpen(true);
   };
 
   const handlePagamentoSucesso = (detalhes: any) => {
     setIsModalPagamentoOpen(false);
+    const userStr = localStorage.getItem("activeAgeUser");
+    if (userStr) {
+      const u = JSON.parse(userStr);
+      u.assinaturaAtiva = true;
+      localStorage.setItem("activeAgeUser", JSON.stringify(u));
+      setUsuarioLogado(u);
+    }
     Swal.fire({
       icon: "success",
       title: "Assinatura Confirmada!",
-      text: `O pagamento do ${detalhes.planoNome} foi processado com sucesso pelo Mercado Pago.`,
+      text: `O pagamento do ${detalhes.planoNome} foi processado com sucesso pelo Mercado Pago (${detalhes.metodo}). Seu consultório virtual está 100% ativo!`,
       confirmButtonColor: "var(--aa-green)",
-      confirmButtonText: "Voltar ao Dashboard",
+      confirmButtonText: "Ir para o Meu Painel",
     }).then(() => {
       navigate("/dashboard");
     });
@@ -545,6 +515,32 @@ export function PlanosMedico() {
           </Link>
         </div>
       </section>
+
+      {/* MODAL NATIVO DE PAGAMENTO SEM REDIRECIONAMENTO EXTERNO */}
+      {isModalPagamentoOpen && planoSelecionado && (
+        <ModalPagamentoMercadoPago
+          isOpen={isModalPagamentoOpen}
+          onClose={() => setIsModalPagamentoOpen(false)}
+          onSuccess={handlePagamentoSucesso}
+          tipoItem="PLANO"
+          plano={{
+            id: planoSelecionado.id,
+            nome: planoSelecionado.nome,
+            valor:
+              cicloCobranca === "MENSAL"
+                ? parseFloat(planoSelecionado.precoMensal)
+                : parseFloat(planoSelecionado.precoAnual) * 12,
+            ciclo: cicloCobranca,
+            tipo: "PLANO",
+          }}
+          medico={{
+            id: usuarioLogado?.id,
+            nome: usuarioLogado?.nome,
+            email: usuarioLogado?.email,
+            crm: usuarioLogado?.crm,
+          }}
+        />
+      )}
 
       <style>{`
         .pricing-card-featured {

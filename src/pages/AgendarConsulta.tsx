@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import Swal from "sweetalert2";
+import { ModalPagamentoMercadoPago } from "../components/pagamento/ModalPagamentoMercadoPago";
 
 interface Agendamento {
   id: string;
@@ -26,6 +27,8 @@ export function AgendarConsulta() {
   const [medico, setMedico] = useState<any>(null);
   const [avaliacoes, setAvaliacoes] = useState<any[]>([]);
   const [detalhesHorarios, setDetalhesHorarios] = useState<Record<string, DetalheConsulta>>({});
+  const [horarioParaPagar, setHorarioParaPagar] = useState<Agendamento | null>(null);
+  const [isModalPagamentoOpen, setIsModalPagamentoOpen] = useState(false);
 
   const [configMedico, setConfigMedico] = useState<{
     duracaoMinutos: number;
@@ -183,93 +186,10 @@ export function AgendarConsulta() {
       cancelButtonColor: "var(--aa-brown)",
       confirmButtonText: "Prosseguir para Pagamento",
       cancelButtonText: "Voltar",
-    }).then(async (result) => {
+    }).then((result) => {
       if (result.isConfirmed) {
-        try {
-          Swal.fire({
-            title: "Conectando ao Mercado Pago...",
-            text: "Aguarde enquanto geramos o link de pagamento.",
-            allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            },
-          });
-
-          const valorFinal = Number(infoDestaConsulta.valor || 180);
-
-          const response = await fetch(
-            "https://active-age-payment-service.onrender.com/api/payments/create",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                amount: valorFinal,
-                description: `Teleconsulta com ${medico?.nome || "Médico Especialista"}`,
-                payerEmail: pacienteLogado?.email || "paciente@teste.com",
-                type: "CONSULTATION",
-                referenceId: `AGEND-${h.id}`,
-              }),
-            },
-          );
-
-          const data = await response.json();
-          if (data.checkoutUrl) {
-            Swal.close();
-            window.open(data.checkoutUrl, "_blank");
-
-            await fetch(
-              `https://active-age-backend.onrender.com/api/agendamentos/marcar/${h.id}/paciente/${pacienteId}`,
-              { method: "PUT" },
-            ).catch(() => null);
-
-            Swal.fire({
-              title: "Aguardando Pagamento...",
-              html: "A aba do Mercado Pago foi aberta. Finalize seu pagamento para confirmar o agendamento.<br/><br/><b>Não feche esta tela!</b> Estamos aguardando a confirmação...",
-              allowOutsideClick: false,
-              didOpen: () => {
-                Swal.showLoading();
-              },
-            });
-
-            const intervalo = setInterval(async () => {
-              try {
-                const res = await fetch(
-                  `https://active-age-backend.onrender.com/api/agendamentos/paciente/${pacienteId}`
-                );
-                if (res.ok) {
-                  const agendamentos = await res.json();
-                  const agendamentoAtualizado = agendamentos.find((a: any) => a.id === h.id);
-                  if (agendamentoAtualizado && agendamentoAtualizado.status === "CONFIRMADO") {
-                    clearInterval(intervalo);
-                    Swal.fire({
-                      icon: "success",
-                      title: "Pagamento Confirmado!",
-                      text: "Sua teleconsulta foi agendada com sucesso.",
-                      confirmButtonColor: "var(--aa-green)",
-                      confirmButtonText: "Ir para Meu Painel",
-                    }).then(() => {
-                      navigate("/dashboard");
-                    });
-                  }
-                }
-              } catch (err) {
-                console.error("Erro ao checar status do pagamento", err);
-              }
-            }, 3000);
-          } else {
-            Swal.fire(
-              "Erro",
-              data?.message || "Não foi possível gerar o link de pagamento.",
-              "error",
-            );
-          }
-        } catch (error) {
-          Swal.fire(
-            "Erro",
-            "Erro ao conectar com o serviço de pagamentos.",
-            "error",
-          );
-        }
+        setHorarioParaPagar(h);
+        setIsModalPagamentoOpen(true);
       }
     });
   };
@@ -589,6 +509,68 @@ export function AgendarConsulta() {
           </div>
         </div>
       </section>
+
+      {/* MODAL NATIVO DE PAGAMENTO SEM REDIRECIONAMENTO EXTERNO */}
+      {isModalPagamentoOpen && horarioParaPagar && (
+        <ModalPagamentoMercadoPago
+          isOpen={isModalPagamentoOpen}
+          onClose={() => {
+            setIsModalPagamentoOpen(false);
+            setHorarioParaPagar(null);
+          }}
+          onSuccess={(detalhes) => {
+            setIsModalPagamentoOpen(false);
+            setHorarioParaPagar(null);
+            Swal.fire({
+              icon: "success",
+              title: "Teleconsulta Agendada e Paga!",
+              text: `Seu pagamento foi confirmado com sucesso via ${detalhes.metodo}. Sua sala de teleconsulta já está liberada!`,
+              confirmButtonColor: "var(--aa-green)",
+              confirmButtonText: "Ir para Meu Painel",
+            }).then(() => {
+              navigate("/dashboard");
+            });
+          }}
+          tipoItem="CONSULTA"
+          plano={{
+            id: horarioParaPagar.id,
+            nome: `Teleconsulta com ${medico?.nome || "Médico Especialista"}`,
+            valor: Number(
+              obterInfoDesteHorario(
+                horarioParaPagar.id,
+                horarioParaPagar.dataHora
+              ).valor || 180
+            ),
+            ciclo: "CONSULTA",
+            tipo: "CONSULTA",
+            dataHoraFormatada: new Date(
+              horarioParaPagar.dataHora
+            ).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            duracaoMinutos: obterInfoDesteHorario(
+              horarioParaPagar.id,
+              horarioParaPagar.dataHora
+            ).duracao,
+          }}
+          medico={{
+            id: medico?.id,
+            nome: medico?.nome,
+            email: medico?.email,
+            crm: medico?.crm,
+          }}
+          paciente={{
+            id: pacienteLogado?.id,
+            nome: pacienteLogado?.nome,
+            email: pacienteLogado?.email,
+            cpf: pacienteLogado?.cpf,
+          }}
+        />
+      )}
 
       <style>{`
         .animation-fade-in {
