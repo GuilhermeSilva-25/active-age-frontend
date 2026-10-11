@@ -494,11 +494,12 @@ export function Dashboard() {
           );
           if (res.ok) {
             const atualizado = await res.json().catch(() => null);
+            await carregarDados(user);
             if (atualizado && atualizado.statusReembolso === "APROVADO") {
               Swal.fire({
                 icon: "success",
                 title: "Cancelamento e Estorno Concluídos!",
-                html: `A consulta foi desmarcada com sucesso.<br/><br/>
+                html: `Consulta cancelada e paciente notificado.<br/><br/>
                        <div class="p-3 bg-light rounded border text-start small">
                          <b>Comprovante de Reembolso:</b><br/>
                          • Código do Estorno: <code class="text-dark">${atualizado.idReembolso || "REF-MP"}</code><br/>
@@ -512,11 +513,10 @@ export function Dashboard() {
             } else {
               Swal.fire(
                 "Cancelado",
-                "Consulta cancelada com sucesso.",
+                "Consulta cancelada e paciente notificado",
                 "success",
               );
             }
-            carregarDados(user);
           } else {
             const errJson = await res.json().catch(() => null);
             const msgErro = errJson?.message || "Não foi possível cancelar no servidor.";

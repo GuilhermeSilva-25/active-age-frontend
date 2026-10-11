@@ -195,7 +195,7 @@ export function AgendaMedico() {
 
         setDataNova("");
         setHoraNova("");
-        carregarAgenda(user!.id);
+        await carregarAgenda(user!.id);
       } else {
         const erroMsg = await response.json().catch(() => null);
         Swal.fire(
@@ -228,6 +228,7 @@ export function AgendaMedico() {
           );
           if (res.ok) {
             setHorarios((prev) => prev.filter((h) => h.id !== id));
+            if (user) await carregarAgenda(user.id);
 
             if (user) {
               const copia = { ...detalhesHorarios };
@@ -242,7 +243,7 @@ export function AgendaMedico() {
 
             Swal.fire(
               "Cancelado!",
-              "O horário foi removido com sucesso.",
+              "Consulta cancelada e paciente notificado",
               "success",
             );
           }
