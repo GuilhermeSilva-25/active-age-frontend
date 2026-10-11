@@ -32,8 +32,8 @@ export function AgendaMedico() {
 
   const [dataNova, setDataNova] = useState("");
   const [horaNova, setHoraNova] = useState("");
-  const [duracaoMinutos, setDuracaoMinutos] = useState<number | string>(45);
-  const [valorConsulta, setValorConsulta] = useState<string>("180");
+  const [duracaoMinutos, setDuracaoMinutos] = useState<number | string>("");
+  const [valorConsulta, setValorConsulta] = useState<string>("");
 
   useEffect(() => {
     const userStr = localStorage.getItem("activeAgeUser");
@@ -344,7 +344,7 @@ export function AgendaMedico() {
                       type="number"
                       className="form-control form-control-lg fs-6"
                       min="1"
-                      placeholder="Ex: 45"
+                      placeholder="Ex: 30 minutos"
                       required
                       value={duracaoMinutos}
                       onChange={(e) =>
@@ -374,7 +374,7 @@ export function AgendaMedico() {
                       className="form-control form-control-lg fs-6"
                       min="0"
                       step="any"
-                      placeholder="0,00"
+                      placeholder="Ex: 150.00"
                       required
                       value={valorConsulta}
                       onChange={(e) => setValorConsulta(e.target.value)}

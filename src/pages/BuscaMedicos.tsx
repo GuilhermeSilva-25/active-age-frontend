@@ -57,6 +57,8 @@ export function BuscaMedicos() {
   >({});
   const [buscaNome, setBuscaNome] = useState("");
   const [filtroEspecialidade, setFiltroEspecialidade] = useState("");
+  const [data, setData] = useState("");
+  const [horario, setHorario] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const paletaFundo = ["90c28d", "007bff", "17a2b8", "6f42c1", "e86542"];
@@ -187,6 +189,20 @@ export function BuscaMedicos() {
                   </option>
                 ))}
               </select>
+              <input
+                type="date"
+                className="form-control form-control-lg"
+                aria-label="Filtrar por data"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+              />
+              <input
+                type="time"
+                className="form-control form-control-lg"
+                aria-label="Filtrar por horário"
+                value={horario}
+                onChange={(e) => setHorario(e.target.value)}
+              />
             </div>
           </div>
         </div>
