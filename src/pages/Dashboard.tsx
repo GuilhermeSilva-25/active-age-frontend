@@ -31,6 +31,11 @@ interface Agendamento {
   dataPagamento?: string;
   metodoPagamento?: string;
   transacaoPagamentoId?: string;
+  statusReembolso?: string;
+  idReembolso?: string;
+  dataReembolso?: string;
+  valorReembolsado?: number;
+  motivoCancelamento?: string;
 }
 
 export function Dashboard() {
@@ -430,16 +435,54 @@ export function Dashboard() {
 
   const handleCancelar = async (id: string) => {
     const isPaciente = user?.tipo === "PACIENTE";
+    const agendamento = agendamentos.find((a) => a.id === id);
+
+    if (isPaciente && agendamento?.dataHora) {
+      const dataConsulta = new Date(agendamento.dataHora);
+      const agora = new Date();
+      const diferencaHoras = (dataConsulta.getTime() - agora.getTime()) / (1000 * 60 * 60);
+
+      // Regra de Negócio Oficial RN002
+      if (diferencaHoras < 24) {
+        Swal.fire({
+          icon: "error",
+          title: "Cancelamento não permitido (RN002)",
+          html: "Pelas normas de atendimento e telessaúde da plataforma Active Age, o cancelamento de consultas pelo paciente só é permitido com no mínimo <b>24 horas de antecedência</b>.<br/><br/>Caso precise de assistência emergencial, entre em contato com nossa equipe de suporte.",
+          confirmButtonColor: "var(--aa-orange)",
+          confirmButtonText: "Compreendido",
+        });
+        return;
+      }
+    }
+
+    const foiPago = Boolean(
+      agendamento?.status === "CONFIRMADO" ||
+      agendamento?.valorPago ||
+      agendamento?.transacaoPagamentoId
+    );
+
+    const valorEstimado = Number(agendamento?.valorPago || agendamento?.valor || 180).toFixed(2);
+
+    const htmlAviso = isPaciente
+      ? (foiPago
+          ? `Esta consulta possui pagamento confirmado no valor de <b style="color: var(--aa-green);">R$ ${valorEstimado}</b>.<br/><br/>
+             Como o cancelamento está sendo feito com mais de 24h de antecedência, <b>o reembolso integral será processado automaticamente</b> pelo Mercado Pago e creditado de volta.<br/><br/>
+             Deseja confirmar o cancelamento e solicitar o estorno?`
+          : "O horário voltará para a agenda do médico e o agendamento será cancelado. Deseja confirmar?")
+      : (foiPago
+          ? `Atenção Dr(a): Esta consulta já foi paga pelo paciente (<b style="color: var(--aa-green);">R$ ${valorEstimado}</b>).<br/><br/>
+             Ao cancelar, o <b>reembolso total será emitido imediatamente</b> para a conta/cartão do paciente.<br/><br/>
+             Deseja realmente cancelar este horário?`
+          : "Este horário será invalidado e removido da sua agenda.");
+
     Swal.fire({
-      title: "Deseja cancelar a consulta?",
-      html: isPaciente
-          ? "O horário voltará para a agenda do médico.<br/><br/><b>Aviso de Reembolso:</b> Caso você já tenha pago, o estorno será processado automaticamente pelo Mercado Pago e devolvido na sua conta bancária ou cartão em até 3 dias úteis."
-          : "Este horário será invalidado e removido da sua agenda.",
+      title: "Confirmar Cancelamento?",
+      html: htmlAviso,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "var(--aa-brown)",
-      confirmButtonText: "Sim, cancelar consulta",
+      confirmButtonText: foiPago ? "Sim, cancelar e estornar" : "Sim, cancelar",
       cancelButtonText: "Voltar",
     }).then(async (result) => {
       if (result.isConfirmed && user) {
@@ -450,21 +493,39 @@ export function Dashboard() {
             { method: "PUT" },
           );
           if (res.ok) {
-            Swal.fire(
-              "Cancelado",
-              "Consulta cancelada com sucesso.",
-              "success",
-            );
-          } else {
+            const atualizado = await res.json().catch(() => null);
+            if (atualizado && atualizado.statusReembolso === "APROVADO") {
+              Swal.fire({
+                icon: "success",
+                title: "Cancelamento e Estorno Concluídos!",
+                html: `A consulta foi desmarcada com sucesso.<br/><br/>
+                       <div class="p-3 bg-light rounded border text-start small">
+                         <b>Comprovante de Reembolso:</b><br/>
+                         • Código do Estorno: <code class="text-dark">${atualizado.idReembolso || "REF-MP"}</code><br/>
+                         • Valor Devolvido: <b style="color: var(--aa-green);">R$ ${Number(atualizado.valorReembolsado || atualizado.valorPago || 180).toFixed(2)}</b><br/>
+                         • Status: <span class="badge bg-success">Aprovado pelo Gateway</span>
+                       </div><br/>
+                       O registro completo já está disponível no seu <b>Extrato de Pagamentos</b>.`,
+                confirmButtonColor: "var(--aa-green)",
+                confirmButtonText: "Fechar",
+              });
+            } else {
+              Swal.fire(
+                "Cancelado",
+                "Consulta cancelada com sucesso.",
+                "success",
+              );
+            }
             carregarDados(user);
-            Swal.fire(
-              "Erro",
-              "Não foi possível cancelar no servidor.",
-              "error",
-            );
+          } else {
+            const errJson = await res.json().catch(() => null);
+            const msgErro = errJson?.message || "Não foi possível cancelar no servidor.";
+            carregarDados(user);
+            Swal.fire("Erro ao Cancelar", msgErro, "error");
           }
         } catch (error) {
           carregarDados(user);
+          Swal.fire("Erro", "Falha de conexão com o servidor.", "error");
         }
       }
     });
@@ -699,8 +760,20 @@ export function Dashboard() {
   );
 
   const renderExtratoPagamentos = () => {
-    const pagamentos = agendamentos.filter(a => a.status === "CONFIRMADO" || a.status === "REALIZADO" || (a.valorPago && a.valorPago > 0))
-      .sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime());
+    const pagamentos = agendamentos
+      .filter(
+        (a) =>
+          a.status === "CONFIRMADO" ||
+          a.status === "REALIZADO" ||
+          a.status === "CONCLUIDO" ||
+          a.statusReembolso === "APROVADO" ||
+          (a.valorPago && a.valorPago > 0),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.dataPagamento || b.dataHora).getTime() -
+          new Date(a.dataPagamento || a.dataHora).getTime(),
+      );
 
     if (pagamentos.length === 0) return null;
 
@@ -724,26 +797,98 @@ export function Dashboard() {
             </div>
             
             <div className="horizontal-scroll gap-3 pb-2" ref={extratoRef}>
-              {pagamentos.map(p => (
-                <div key={p.id} className="p-3 border shadow-sm bg-light d-flex flex-column justify-content-between gap-2" style={{ borderRadius: "12px", minWidth: "300px", flex: "0 0 auto" }}>
-                   <div className="d-flex justify-content-between border-bottom pb-2">
-                     <span className="fw-bold text-muted small">Data</span>
-                     <span className="fw-bold text-dark small">{p.dataPagamento ? new Date(p.dataPagamento).toLocaleDateString('pt-BR') : new Date(p.dataHora).toLocaleDateString('pt-BR')}</span>
-                   </div>
-                   <div className="d-flex justify-content-between">
-                     <span className="text-muted small">Médico</span>
-                     <span className="text-dark small fw-semibold text-truncate" style={{maxWidth: "150px"}}>{p.medicoNome}</span>
-                   </div>
-                   <div className="d-flex justify-content-between">
-                     <span className="text-muted small">Valor Pago</span>
-                     <span className="text-success fw-bold">R$ {Number(p.valorPago || p.valor || 180).toFixed(2)}</span>
-                   </div>
-                   
-                   <button className="btn btn-sm btn-outline-primary mt-2 fw-bold" onClick={() => setReciboVisualizado(p)}>
-                     <i className="bi bi-file-earmark-pdf me-1"></i> Ver Recibo
-                   </button>
-                </div>
-              ))}
+              {pagamentos.map((p) => {
+                const isReembolsado =
+                  p.statusReembolso === "APROVADO" ||
+                  p.status.startsWith("CANCELADO");
+                return (
+                  <div
+                    key={p.id}
+                    className={`p-3 border shadow-sm ${
+                      isReembolsado ? "bg-white border-danger-subtle" : "bg-light"
+                    } d-flex flex-column justify-content-between gap-2`}
+                    style={{
+                      borderRadius: "12px",
+                      minWidth: "300px",
+                      flex: "0 0 auto",
+                    }}
+                  >
+                    <div className="d-flex justify-content-between border-bottom pb-2 align-items-center">
+                      <span className="fw-bold text-muted small">Data</span>
+                      <div className="d-flex align-items-center gap-1">
+                        {isReembolsado && (
+                          <span className="badge bg-danger bg-opacity-10 text-danger border border-danger small">
+                            Estornado
+                          </span>
+                        )}
+                        <span className="fw-bold text-dark small">
+                          {p.dataPagamento
+                            ? new Date(p.dataPagamento).toLocaleDateString(
+                                "pt-BR",
+                              )
+                            : new Date(p.dataHora).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span className="text-muted small">Médico</span>
+                      <span
+                        className="text-dark small fw-semibold text-truncate"
+                        style={{ maxWidth: "150px" }}
+                      >
+                        {p.medicoNome}
+                      </span>
+                    </div>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <span className="text-muted small">
+                        {isReembolsado ? "Estorno" : "Valor Pago"}
+                      </span>
+                      {isReembolsado ? (
+                        <div className="text-end">
+                          <span className="text-muted text-decoration-line-through small d-block">
+                            R${" "}
+                            {Number(p.valorPago || p.valor || 180).toFixed(2)}
+                          </span>
+                          <span className="text-danger fw-bold small">
+                            R${" "}
+                            {Number(
+                              p.valorReembolsado ||
+                                p.valorPago ||
+                                p.valor ||
+                                180,
+                            ).toFixed(2)}{" "}
+                            (Devolvido)
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-success fw-bold">
+                          R$ {Number(p.valorPago || p.valor || 180).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      className={`btn btn-sm ${
+                        isReembolsado
+                          ? "btn-outline-danger"
+                          : "btn-outline-primary"
+                      } mt-2 fw-bold`}
+                      onClick={() => setReciboVisualizado(p)}
+                    >
+                      <i
+                        className={`bi ${
+                          isReembolsado
+                            ? "bi-file-earmark-diff"
+                            : "bi-file-earmark-pdf"
+                        } me-1`}
+                      ></i>{" "}
+                      {isReembolsado
+                        ? "Ver Recibo de Estorno"
+                        : "Ver Recibo"}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1424,10 +1569,64 @@ export function Dashboard() {
                       <span>{reciboVisualizado.dataPagamento ? new Date(reciboVisualizado.dataPagamento).toLocaleDateString('pt-BR') : 'N/A'}</span>
                     </div>
 
-                    <div className="p-2 bg-light rounded text-center my-3 border">
-                      <span className="text-muted small d-block">VALOR PAGO</span>
-                      <span className="fs-4 fw-bold text-success">R$ {Number(reciboVisualizado.valorPago || reciboVisualizado.valor || 180).toFixed(2)}</span>
-                    </div>
+                    {reciboVisualizado.statusReembolso === "APROVADO" ||
+                    reciboVisualizado.status.startsWith("CANCELADO") ? (
+                      <div className="p-3 bg-danger bg-opacity-10 rounded text-center my-3 border border-danger">
+                        <span className="badge bg-danger mb-2">
+                          CONSULTA CANCELADA COM ESTORNO
+                        </span>
+                        <div className="d-flex justify-content-between mb-1 small text-start">
+                          <span className="text-muted">Status do Estorno:</span>
+                          <span className="text-success fw-bold">
+                            Aprovado no Gateway
+                          </span>
+                        </div>
+                        <div className="d-flex justify-content-between mb-1 small text-start">
+                          <span className="text-muted">Código do Estorno:</span>
+                          <span className="font-monospace fw-bold">
+                            {reciboVisualizado.idReembolso || "REF-MP"}
+                          </span>
+                        </div>
+                        <div className="d-flex justify-content-between mb-1 small text-start">
+                          <span className="text-muted">Data do Estorno:</span>
+                          <span>
+                            {reciboVisualizado.dataReembolso
+                              ? new Date(
+                                  reciboVisualizado.dataReembolso,
+                                ).toLocaleDateString("pt-BR")
+                              : "Hoje"}
+                          </span>
+                        </div>
+                        <div className="d-flex justify-content-between mt-2 pt-2 border-top small text-start align-items-center">
+                          <span className="fw-bold text-dark">
+                            Valor Devolvido:
+                          </span>
+                          <span className="fs-5 fw-bold text-danger">
+                            R${" "}
+                            {Number(
+                              reciboVisualizado.valorReembolsado ||
+                                reciboVisualizado.valorPago ||
+                                reciboVisualizado.valor ||
+                                180,
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2 bg-light rounded text-center my-3 border">
+                        <span className="text-muted small d-block">
+                          VALOR PAGO
+                        </span>
+                        <span className="fs-4 fw-bold text-success">
+                          R${" "}
+                          {Number(
+                            reciboVisualizado.valorPago ||
+                              reciboVisualizado.valor ||
+                              180,
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
