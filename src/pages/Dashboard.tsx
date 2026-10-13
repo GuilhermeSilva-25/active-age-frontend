@@ -232,11 +232,26 @@ export function Dashboard() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
+    let intervaloRef: ReturnType<typeof setInterval> | null = null;
+
     const checarNovidades = () => {
+      // Se o token sumiu (logout manual ou expirado), para o polling imediatamente
+      const tokenAtual = localStorage.getItem("activeAgeToken");
+      if (!tokenAtual) {
+        if (intervaloRef) clearInterval(intervaloRef);
+        navigate("/login");
+        return;
+      }
+
       fetch(
         `https://active-age-backend.onrender.com/api/usuarios/${usuarioLogado.id}`,
       )
         .then((res) => {
+          // 401 = token rejeitado pelo backend, para o polling sem duplicar o redirect do interceptor
+          if (res.status === 401) {
+            if (intervaloRef) clearInterval(intervaloRef);
+            return null;
+          }
           if (!res.ok) return null;
           return res.json();
         })
@@ -264,12 +279,13 @@ export function Dashboard() {
               JSON.stringify(dadosFresquinhos),
             );
             setUser(dadosFresquinhos);
-          }
 
-          if (usuarioLogado.tipo !== "ADMIN") {
-            carregarDados(usuarioLogado);
-          } else {
-            carregarPendentes();
+            // Só recarrega agendamentos quando houve mudança real
+            if (usuarioLogado.tipo !== "ADMIN") {
+              carregarDados(usuarioLogado);
+            } else {
+              carregarPendentes();
+            }
           }
         })
         .catch(() => {
@@ -279,9 +295,11 @@ export function Dashboard() {
 
     checarNovidades();
 
-    const relogio = setInterval(checarNovidades, 10000);
+    intervaloRef = setInterval(checarNovidades, 10000);
 
-    return () => clearInterval(relogio);
+    return () => {
+      if (intervaloRef) clearInterval(intervaloRef);
+    };
   }, [navigate]);
 
   const carregarDados = async (u: Usuario) => {
