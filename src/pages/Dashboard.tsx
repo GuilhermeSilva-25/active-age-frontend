@@ -94,7 +94,7 @@ export function Dashboard() {
       const valorEsperado = Number(pagamentoPendente?.valor || 180);
       const refId =
         tipoItem === "CONSULTA" ||
-        (!tipoItem && usuarioLogado.tipo === "PACIENTE")
+          (!tipoItem && usuarioLogado.tipo === "PACIENTE")
           ? `AGEND-${itemId}`
           : `MED-${pagamentoPendente?.medicoId || usuarioLogado.id}`;
 
@@ -464,7 +464,7 @@ export function Dashboard() {
       if (diferencaHoras < 24) {
         Swal.fire({
           icon: "error",
-          title: "Cancelamento não permitido (RN002)",
+          title: "Cancelamento não permitido",
           html: "Pelas normas de atendimento e telessaúde da plataforma Active Age, o cancelamento de consultas pelo paciente só é permitido com no mínimo <b>24 horas de antecedência</b>.<br/><br/>Caso precise de assistência emergencial, entre em contato com nossa equipe de suporte.",
           confirmButtonColor: "var(--aa-orange)",
           confirmButtonText: "Compreendido",
@@ -483,15 +483,15 @@ export function Dashboard() {
 
     const htmlAviso = isPaciente
       ? (foiPago
-          ? `Esta consulta possui pagamento confirmado no valor de <b style="color: var(--aa-green);">R$ ${valorEstimado}</b>.<br/><br/>
+        ? `Esta consulta possui pagamento confirmado no valor de <b style="color: var(--aa-green);">R$ ${valorEstimado}</b>.<br/><br/>
              Como o cancelamento está sendo feito com mais de 24h de antecedência, <b>o reembolso integral será processado automaticamente</b> pelo Mercado Pago e creditado de volta.<br/><br/>
              Deseja confirmar o cancelamento e solicitar o estorno?`
-          : "O horário voltará para a agenda do médico e o agendamento será cancelado. Deseja confirmar?")
+        : "O horário voltará para a agenda do médico e o agendamento será cancelado. Deseja confirmar?")
       : (foiPago
-          ? `Atenção Dr(a): Esta consulta já foi paga pelo paciente (<b style="color: var(--aa-green);">R$ ${valorEstimado}</b>).<br/><br/>
+        ? `Atenção Dr(a): Esta consulta já foi paga pelo paciente (<b style="color: var(--aa-green);">R$ ${valorEstimado}</b>).<br/><br/>
              Ao cancelar, o <b>reembolso total será emitido imediatamente</b> para a conta/cartão do paciente.<br/><br/>
              Deseja realmente cancelar este horário?`
-          : "Este horário será invalidado e removido da sua agenda.");
+        : "Este horário será invalidado e removido da sua agenda.");
 
     Swal.fire({
       title: "Confirmar Cancelamento?",
@@ -796,120 +796,117 @@ export function Dashboard() {
     if (pagamentos.length === 0) return null;
 
     return (
-        <div className="card shadow-sm border-0 mt-4" style={{ borderRadius: "15px" }}>
-          <div className="card-body p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h5 style={{ color: "var(--aa-brown)" }} className="mb-0">
-                <i className="bi bi-receipt me-2"></i>Extrato de Pagamentos
-              </h5>
-              {pagamentos.length > 0 && (
-                <div>
-                  <button className="btn btn-sm btn-light border rounded-circle me-2" onClick={() => scroll(extratoRef, "left")}>
-                    <i className="bi bi-chevron-left"></i>
-                  </button>
-                  <button className="btn btn-sm btn-light border rounded-circle" onClick={() => scroll(extratoRef, "right")}>
-                    <i className="bi bi-chevron-right"></i>
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="horizontal-scroll gap-3 pb-2" ref={extratoRef}>
-              {pagamentos.map((p) => {
-                const isReembolsado =
-                  p.statusReembolso === "APROVADO" ||
-                  p.status.startsWith("CANCELADO");
-                return (
-                  <div
-                    key={p.id}
-                    className={`p-3 border shadow-sm ${
-                      isReembolsado ? "bg-white border-danger-subtle" : "bg-light"
+      <div className="card shadow-sm border-0 mt-4" style={{ borderRadius: "15px" }}>
+        <div className="card-body p-4">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h5 style={{ color: "var(--aa-brown)" }} className="mb-0">
+              <i className="bi bi-receipt me-2"></i>Extrato de Pagamentos
+            </h5>
+            {pagamentos.length > 0 && (
+              <div>
+                <button className="btn btn-sm btn-light border rounded-circle me-2" onClick={() => scroll(extratoRef, "left")}>
+                  <i className="bi bi-chevron-left"></i>
+                </button>
+                <button className="btn btn-sm btn-light border rounded-circle" onClick={() => scroll(extratoRef, "right")}>
+                  <i className="bi bi-chevron-right"></i>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="horizontal-scroll gap-3 pb-2" ref={extratoRef}>
+            {pagamentos.map((p) => {
+              const isReembolsado =
+                p.statusReembolso === "APROVADO" ||
+                p.status.startsWith("CANCELADO");
+              return (
+                <div
+                  key={p.id}
+                  className={`p-3 border shadow-sm ${isReembolsado ? "bg-white border-danger-subtle" : "bg-light"
                     } d-flex flex-column justify-content-between gap-2`}
-                    style={{
-                      borderRadius: "12px",
-                      minWidth: "300px",
-                      flex: "0 0 auto",
-                    }}
-                  >
-                    <div className="d-flex justify-content-between border-bottom pb-2 align-items-center">
-                      <span className="fw-bold text-muted small">Data</span>
-                      <div className="d-flex align-items-center gap-1">
-                        {isReembolsado && (
-                          <span className="badge bg-danger bg-opacity-10 text-danger border border-danger small">
-                            Estornado
-                          </span>
-                        )}
-                        <span className="fw-bold text-dark small">
-                          {p.dataPagamento
-                            ? new Date(p.dataPagamento).toLocaleDateString(
-                                "pt-BR",
-                              )
-                            : new Date(p.dataHora).toLocaleDateString("pt-BR")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span className="text-muted small">Médico</span>
-                      <span
-                        className="text-dark small fw-semibold text-truncate"
-                        style={{ maxWidth: "150px" }}
-                      >
-                        {p.medicoNome}
-                      </span>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span className="text-muted small">
-                        {isReembolsado ? "Estorno" : "Valor Pago"}
-                      </span>
-                      {isReembolsado ? (
-                        <div className="text-end">
-                          <span className="text-muted text-decoration-line-through small d-block">
-                            R${" "}
-                            {Number(p.valorPago || p.valor || 180).toFixed(2)}
-                          </span>
-                          <span className="text-danger fw-bold small">
-                            R${" "}
-                            {Number(
-                              p.valorReembolsado ||
-                                p.valorPago ||
-                                p.valor ||
-                                180,
-                            ).toFixed(2)}{" "}
-                            (Devolvido)
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-success fw-bold">
-                          R$ {Number(p.valorPago || p.valor || 180).toFixed(2)}
+                  style={{
+                    borderRadius: "12px",
+                    minWidth: "300px",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  <div className="d-flex justify-content-between border-bottom pb-2 align-items-center">
+                    <span className="fw-bold text-muted small">Data</span>
+                    <div className="d-flex align-items-center gap-1">
+                      {isReembolsado && (
+                        <span className="badge bg-danger bg-opacity-10 text-danger border border-danger small">
+                          Estornado
                         </span>
                       )}
+                      <span className="fw-bold text-dark small">
+                        {p.dataPagamento
+                          ? new Date(p.dataPagamento).toLocaleDateString(
+                            "pt-BR",
+                          )
+                          : new Date(p.dataHora).toLocaleDateString("pt-BR")}
+                      </span>
                     </div>
-
-                    <button
-                      className={`btn btn-sm ${
-                        isReembolsado
-                          ? "btn-outline-danger"
-                          : "btn-outline-primary"
-                      } mt-2 fw-bold`}
-                      onClick={() => setReciboVisualizado(p)}
-                    >
-                      <i
-                        className={`bi ${
-                          isReembolsado
-                            ? "bi-file-earmark-diff"
-                            : "bi-file-earmark-pdf"
-                        } me-1`}
-                      ></i>{" "}
-                      {isReembolsado
-                        ? "Ver Recibo de Estorno"
-                        : "Ver Recibo"}
-                    </button>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="d-flex justify-content-between">
+                    <span className="text-muted small">Médico</span>
+                    <span
+                      className="text-dark small fw-semibold text-truncate"
+                      style={{ maxWidth: "150px" }}
+                    >
+                      {p.medicoNome}
+                    </span>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <span className="text-muted small">
+                      {isReembolsado ? "Estorno" : "Valor Pago"}
+                    </span>
+                    {isReembolsado ? (
+                      <div className="text-end">
+                        <span className="text-muted text-decoration-line-through small d-block">
+                          R${" "}
+                          {Number(p.valorPago || p.valor || 180).toFixed(2)}
+                        </span>
+                        <span className="text-danger fw-bold small">
+                          R${" "}
+                          {Number(
+                            p.valorReembolsado ||
+                            p.valorPago ||
+                            p.valor ||
+                            180,
+                          ).toFixed(2)}{" "}
+                          (Devolvido)
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-success fw-bold">
+                        R$ {Number(p.valorPago || p.valor || 180).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    className={`btn btn-sm ${isReembolsado
+                        ? "btn-outline-danger"
+                        : "btn-outline-primary"
+                      } mt-2 fw-bold`}
+                    onClick={() => setReciboVisualizado(p)}
+                  >
+                    <i
+                      className={`bi ${isReembolsado
+                          ? "bi-file-earmark-diff"
+                          : "bi-file-earmark-pdf"
+                        } me-1`}
+                    ></i>{" "}
+                    {isReembolsado
+                      ? "Ver Recibo de Estorno"
+                      : "Ver Recibo"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
+      </div>
     );
   };
 
@@ -1147,25 +1144,25 @@ export function Dashboard() {
                   </h4>
                   {agendamentos.filter((a) => a.status === "AGENDADO" || a.status === "CONFIRMADO" || a.status === "AGUARDANDO_PAGAMENTO").length >
                     0 && (
-                    <div>
-                      <button
-                        className="btn btn-sm btn-light border rounded-circle me-2"
-                        onClick={() => scroll(agendaMedicoRef, "left")}
-                      >
-                        <i className="bi bi-chevron-left"></i>
-                      </button>
-                      <button
-                        className="btn btn-sm btn-light border rounded-circle"
-                        onClick={() => scroll(agendaMedicoRef, "right")}
-                      >
-                        <i className="bi bi-chevron-right"></i>
-                      </button>
-                    </div>
-                  )}
+                      <div>
+                        <button
+                          className="btn btn-sm btn-light border rounded-circle me-2"
+                          onClick={() => scroll(agendaMedicoRef, "left")}
+                        >
+                          <i className="bi bi-chevron-left"></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-light border rounded-circle"
+                          onClick={() => scroll(agendaMedicoRef, "right")}
+                        >
+                          <i className="bi bi-chevron-right"></i>
+                        </button>
+                      </div>
+                    )}
                 </div>
 
                 {agendamentos.filter((a) => a.status === "AGENDADO" || a.status === "CONFIRMADO" || a.status === "AGUARDANDO_PAGAMENTO").length >
-                0 ? (
+                  0 ? (
                   <div
                     className="horizontal-scroll gap-3 pb-2"
                     ref={agendaMedicoRef}
@@ -1576,11 +1573,11 @@ export function Dashboard() {
                     </div>
                     <div className="d-flex justify-content-between mb-2">
                       <span className="text-muted">Data da Consulta:</span>
-                      <strong>{new Date(reciboVisualizado.dataHora).toLocaleDateString('pt-BR')} às {new Date(reciboVisualizado.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</strong>
+                      <strong>{new Date(reciboVisualizado.dataHora).toLocaleDateString('pt-BR')} às {new Date(reciboVisualizado.dataHora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</strong>
                     </div>
                     <div className="d-flex justify-content-between mb-2">
                       <span className="text-muted">Código da Transação:</span>
-                      <span className="font-monospace text-break" style={{maxWidth: "150px"}}>{reciboVisualizado.transacaoPagamentoId || reciboVisualizado.id}</span>
+                      <span className="font-monospace text-break" style={{ maxWidth: "150px" }}>{reciboVisualizado.transacaoPagamentoId || reciboVisualizado.id}</span>
                     </div>
                     <div className="d-flex justify-content-between mb-2">
                       <span className="text-muted">Data do Pgto:</span>
@@ -1588,7 +1585,7 @@ export function Dashboard() {
                     </div>
 
                     {reciboVisualizado.statusReembolso === "APROVADO" ||
-                    reciboVisualizado.status.startsWith("CANCELADO") ? (
+                      reciboVisualizado.status.startsWith("CANCELADO") ? (
                       <div className="p-3 bg-danger bg-opacity-10 rounded text-center my-3 border border-danger">
                         <span className="badge bg-danger mb-2">
                           CONSULTA CANCELADA COM ESTORNO
@@ -1610,8 +1607,8 @@ export function Dashboard() {
                           <span>
                             {reciboVisualizado.dataReembolso
                               ? new Date(
-                                  reciboVisualizado.dataReembolso,
-                                ).toLocaleDateString("pt-BR")
+                                reciboVisualizado.dataReembolso,
+                              ).toLocaleDateString("pt-BR")
                               : "Hoje"}
                           </span>
                         </div>
@@ -1623,9 +1620,9 @@ export function Dashboard() {
                             R${" "}
                             {Number(
                               reciboVisualizado.valorReembolsado ||
-                                reciboVisualizado.valorPago ||
-                                reciboVisualizado.valor ||
-                                180,
+                              reciboVisualizado.valorPago ||
+                              reciboVisualizado.valor ||
+                              180,
                             ).toFixed(2)}
                           </span>
                         </div>
@@ -1639,8 +1636,8 @@ export function Dashboard() {
                           R${" "}
                           {Number(
                             reciboVisualizado.valorPago ||
-                              reciboVisualizado.valor ||
-                              180,
+                            reciboVisualizado.valor ||
+                            180,
                           ).toFixed(2)}
                         </span>
                       </div>
