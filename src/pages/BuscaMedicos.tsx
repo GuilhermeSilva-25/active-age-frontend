@@ -55,6 +55,9 @@ export function BuscaMedicos() {
   const [disponibilidade, setDisponibilidade] = useState<
     Record<string, boolean>
   >({});
+  const [slotsDisponiveis, setSlotsDisponiveis] = useState<
+    Record<string, { dataHora: string }[]>
+  >({});
   const [buscaNome, setBuscaNome] = useState("");
   const [filtroEspecialidade, setFiltroEspecialidade] = useState("");
   const [data, setData] = useState("");
@@ -100,6 +103,7 @@ export function BuscaMedicos() {
 
   const verificarDisponibilidades = async (listaMedicos: Medico[]) => {
     const disp: Record<string, boolean> = {};
+    const slots: Record<string, { dataHora: string }[]> = {};
 
     await Promise.all(
       listaMedicos.map(async (medico) => {
@@ -108,18 +112,22 @@ export function BuscaMedicos() {
             `https://active-age-backend.onrender.com/api/agendamentos/disponiveis/${medico.id}`,
           );
           if (res.ok) {
-            const vagas = await res.json();
+            const vagas: { dataHora: string }[] = await res.json();
             disp[medico.id] = vagas.length > 0;
+            slots[medico.id] = vagas;
           } else {
             disp[medico.id] = false;
+            slots[medico.id] = [];
           }
         } catch (e) {
           disp[medico.id] = false;
+          slots[medico.id] = [];
         }
       }),
     );
 
     setDisponibilidade(disp);
+    setSlotsDisponiveis(slots);
     setIsLoading(false);
   };
 
@@ -140,7 +148,16 @@ export function BuscaMedicos() {
       filtroEspecialidade === "" ||
       (medico.especializacao &&
         medico.especializacao.includes(filtroEspecialidade));
-    return matchNome && matchEsp;
+
+    const vagasMedico = slotsDisponiveis[medico.id] ?? [];
+    const matchData =
+      data === ""
+      || vagasMedico.some((slot) => slot.dataHora.startsWith(data));
+    const matchHorario =
+      horario === ""
+      || vagasMedico.some((slot) => slot.dataHora.substring(11, 16) === horario);
+
+    return matchNome && matchEsp && matchData && matchHorario;
   });
 
   return (
