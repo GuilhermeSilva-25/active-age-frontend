@@ -140,9 +140,7 @@ export function ModalPagamentoMercadoPago({
   >("FORMULARIO");
 
   const [checkoutUrl, setCheckoutUrl] = useState("");
-  const [preferenceId, setPreferenceId] = useState("");
   const [isIframeCarregando, setIsIframeCarregando] = useState(true);
-  const [mostrarIframeIntegrado, setMostrarIframeIntegrado] = useState(false);
 
   const [transacaoId, setTransacaoId] = useState("");
   const [detalhesFinalizados, setDetalhesFinalizados] = useState<any>(null);
@@ -164,9 +162,7 @@ export function ModalPagamentoMercadoPago({
       setIsProcessando(false);
       setDetalhesFinalizados(null);
       setCheckoutUrl("");
-      setPreferenceId("");
       setIsIframeCarregando(true);
-      setMostrarIframeIntegrado(false);
       const novoId = `MP-${Math.floor(10000000 + Math.random() * 90000000)}`;
       setTransacaoId(novoId);
       setTempoRestantePix(900);
@@ -278,39 +274,6 @@ export function ModalPagamentoMercadoPago({
     }, 400);
   };
 
-  const abrirModalMercadoPago = (prefId?: string, fallbackUrl?: string) => {
-    const idParaUsar = prefId || preferenceId;
-    const urlParaUsar = fallbackUrl || checkoutUrl;
-
-    if (typeof (window as any).MercadoPago !== "undefined" && idParaUsar) {
-      try {
-        const mp = new (window as any).MercadoPago(MP_PUBLIC_KEY, { locale: "pt-BR" });
-        const containerEl = document.getElementById("cho-container");
-        if (containerEl) {
-          containerEl.innerHTML = "";
-        }
-        mp.checkout({
-          preference: {
-            id: idParaUsar,
-          },
-          autoOpen: true,
-          render: {
-            container: "#cho-container",
-            label: "Pagar no Mercado Pago",
-          },
-        });
-        return;
-      } catch (err) {
-        console.warn("Falha ao abrir modal nativo do SDK do Mercado Pago:", err);
-      }
-    }
-
-    // Fallback: se o SDK não estiver disponível no navegador
-    if (urlParaUsar) {
-      window.open(urlParaUsar, "_blank", "noopener,noreferrer");
-    }
-  };
-
   const handlePagarComSaldoMercadoPago = async () => {
     setIsProcessando(true);
 
@@ -334,7 +297,6 @@ export function ModalPagamentoMercadoPago({
       );
 
       let checkoutUrl = "";
-      let prefId = "";
 
       // 2. Tentar criar via microserviço de pagamentos (porta 8081)
       try {
@@ -362,10 +324,6 @@ export function ModalPagamentoMercadoPago({
           const dadosMicroservice = await microserviceResp.json();
           if (dadosMicroservice.checkoutUrl) {
             checkoutUrl = dadosMicroservice.checkoutUrl;
-          }
-          if (dadosMicroservice.preferenceId) {
-            prefId = dadosMicroservice.preferenceId;
-            setPreferenceId(prefId);
           }
         }
       } catch (errMicroservice) {
@@ -420,33 +378,25 @@ export function ModalPagamentoMercadoPago({
           }
         );
 
-        let prefId = "";
         if (mpDirectResp.ok) {
           const dadosMp = await mpDirectResp.json();
           checkoutUrl = dadosMp.init_point || dadosMp.sandbox_init_point;
-          prefId = dadosMp.id || "";
-          setPreferenceId(prefId);
         } else {
           const errText = await mpDirectResp.text();
           console.error("Erro da API do Mercado Pago:", errText);
         }
+      }
 
-        if (prefId || checkoutUrl) {
-          setCheckoutUrl(checkoutUrl);
-          setIsIframeCarregando(false);
-          setMostrarIframeIntegrado(false);
-          setEtapa("CHECKOUT_EMBARCADO");
-          setIsProcessando(false);
-
-          // Disparar o Modal Nativo do Mercado Pago diretamente sobre a página do site
-          setTimeout(() => {
-            abrirModalMercadoPago(prefId, checkoutUrl);
-          }, 150);
-        } else {
-          throw new Error(
-            "Não foi possível gerar a página de pagamento do Mercado Pago."
-          );
-        }
+      // 4. Carregar na janela integrada do tamanho do modal (mantendo o site visível ao fundo)
+      if (checkoutUrl) {
+        setCheckoutUrl(checkoutUrl);
+        setIsIframeCarregando(true);
+        setEtapa("CHECKOUT_EMBARCADO");
+        setIsProcessando(false);
+      } else {
+        throw new Error(
+          "Não foi possível gerar a página de pagamento do Mercado Pago."
+        );
       }
     } catch (err: any) {
       console.error("Erro ao iniciar pagamento com Mercado Pago:", err);
@@ -1025,15 +975,15 @@ export function ModalPagamentoMercadoPago({
             ) : etapa === "CHECKOUT_EMBARCADO" ? (
               /* ETAPA: CHECKOUT MERCADO PAGO INTEGRADO */
               <div className="py-1">
-                {/* BARRA SUPERIOR COM OPÇÃO DE VOLTAR */}
-                <div className="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded-3 border shadow-sm">
+                {/* INSTRUÇÃO CLARA */}
+                <div className="d-flex justify-content-between align-items-center mb-2 bg-white p-3 rounded-3 border shadow-sm">
                   <div>
                     <h6 className="fw-bold mb-0 text-dark fs-6">
                       <i className="bi bi-credit-card-2-front text-primary me-2"></i>
-                      Pagamento com Cartão / Mercado Pago
+                      Tela de Pagamento do Mercado Pago
                     </h6>
                     <small className="text-muted">
-                      Conclua seu pagamento com total segurança no ambiente oficial.
+                      Preencha os dados abaixo. Após concluir, clique em <strong>Confirmar Pagamento</strong>.
                     </small>
                   </div>
                   <button
@@ -1046,102 +996,31 @@ export function ModalPagamentoMercadoPago({
                   </button>
                 </div>
 
-                {/* PAINEL CENTRAL DE PAGAMENTO INTEGRADO */}
-                <div className="bg-white rounded-3 p-4 border shadow-sm text-center">
-                  <div
-                    className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm"
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      background: "linear-gradient(135deg, #0077b6 0%, #009ee3 100%)",
-                      color: "white",
-                      fontSize: "2.3rem",
-                    }}
-                  >
-                    <i className="bi bi-shield-lock-fill"></i>
-                  </div>
-
-                  <h4 className="fw-bold text-dark mb-2">
-                    Pagamento Aberto Diretamente no Site
-                  </h4>
-                  <p className="text-secondary fs-6 mb-3 mx-auto" style={{ maxWidth: "600px" }}>
-                    A janela oficial e segura do Mercado Pago foi acionada <strong>sobre esta tela</strong>, sem redirecionar você para outro site.
-                  </p>
-
-                  {/* CONTAINER PARA O BOTÃO NATIVO OFICIAL DO MERCADO PAGO */}
-                  <div id="cho-container" className="my-3 d-flex justify-content-center"></div>
-
-                  {/* CARD DIDÁTICO DE 3 PASSOS COM LETRAS GRANDES */}
-                  <div className="text-start bg-light rounded-3 p-3 p-md-4 mb-3 border">
-                    <h6 className="fw-bold text-primary mb-3 fs-6 d-flex align-items-center gap-2">
-                      <i className="bi bi-info-circle-fill"></i>
-                      Como concluir sua consulta com tranquilidade:
-                    </h6>
-
-                    <div className="d-flex align-items-start gap-3 mb-3">
-                      <span
-                        className="badge rounded-circle bg-primary fs-6 d-flex align-items-center justify-content-center flex-shrink-0"
-                        style={{ width: "32px", height: "32px" }}
-                      >
-                        1
-                      </span>
-                      <div>
-                        <strong className="text-dark d-block">Preencha na janela do Mercado Pago</strong>
-                        <span className="text-muted small">
-                          Escolha pagar com Cartão de Crédito, Saldo da conta ou Boleto diretamente na janela aberta.
-                        </span>
+                {/* IFRAME */}
+                <div
+                  className="position-relative w-100 rounded-3 overflow-hidden shadow-sm border bg-white"
+                  style={{ height: "650px" }}
+                >
+                  {isIframeCarregando && (
+                    <div className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white z-2">
+                      <div className="spinner-border text-primary mb-3" style={{ width: "3rem", height: "3rem" }}>
+                        <span className="visually-hidden">Carregando...</span>
                       </div>
+                      <h5 className="fw-bold text-dark mb-1">
+                        Carregando a tela de pagamento...
+                      </h5>
+                      <small className="text-muted">Por favor, aguarde alguns instantes</small>
                     </div>
+                  )}
 
-                    <div className="d-flex align-items-start gap-3 mb-3">
-                      <span
-                        className="badge rounded-circle bg-primary fs-6 d-flex align-items-center justify-content-center flex-shrink-0"
-                        style={{ width: "32px", height: "32px" }}
-                      >
-                        2
-                      </span>
-                      <div>
-                        <strong className="text-dark d-block">Detecção Automática</strong>
-                        <span className="text-muted small">
-                          Assim que o pagamento for concluído, o sistema reconhece a aprovação sozinho e libera sua consulta médica!
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="d-flex align-items-start gap-3">
-                      <span
-                        className="badge rounded-circle bg-primary fs-6 d-flex align-items-center justify-content-center flex-shrink-0"
-                        style={{ width: "32px", height: "32px" }}
-                      >
-                        3
-                      </span>
-                      <div>
-                        <strong className="text-dark d-block">Ou confirme manualmente</strong>
-                        <span className="text-muted small">
-                          Se você já pagou e quer acelerar a liberação, basta clicar em <strong>"Já Concluí o Pagamento"</strong> abaixo.
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* BOTÃO PARA REABRIR O MODAL DO MERCADO PAGO */}
-                  <div className="d-flex flex-column flex-sm-row justify-content-center align-items-center gap-2 mb-3">
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-lg px-4 py-2 rounded-pill fw-bold fs-6 d-inline-flex align-items-center gap-2 text-white shadow-sm"
-                      style={{ backgroundColor: "#009ee3", borderColor: "#0077b6" }}
-                      onClick={() => abrirModalMercadoPago()}
-                    >
-                      <i className="bi bi-window-fullscreen"></i>
-                      Reabrir Janela de Pagamento do Mercado Pago
-                    </button>
-                  </div>
-
-                  {/* STATUS DE POLLING AO VIVO */}
-                  <div className="d-inline-flex align-items-center gap-2 py-2 px-3 rounded-pill bg-primary bg-opacity-10 text-primary small fw-semibold">
-                    <span className="spinner-grow spinner-grow-sm" role="status"></span>
-                    Aguardando confirmação do pagamento no Mercado Pago...
-                  </div>
+                  <iframe
+                    id="mpCheckoutIframe"
+                    src={checkoutUrl}
+                    title="Mercado Pago Checkout"
+                    className="w-100 h-100 border-0"
+                    onLoad={() => setIsIframeCarregando(false)}
+                    allow="payment; camera; microphone; clipboard-read; clipboard-write; geolocation"
+                  />
                 </div>
 
                 {/* RODAPÉ COM BOTÃO GRANDE DE CONFIRMAR */}
