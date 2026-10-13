@@ -153,6 +153,8 @@ export function ModalPagamentoMercadoPago({
   // PIX
   const [codigoPixCopiaCola, setCodigoPixCopiaCola] = useState("");
   const [tempoRestantePix, setTempoRestantePix] = useState(900); // 15 minutos
+  const [linhaDigitavel, setLinhaDigitavel] = useState("");
+  const [dataVencimentoBoleto, setDataVencimentoBoleto] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -753,198 +755,200 @@ export function ModalPagamentoMercadoPago({
     >
       <div
         className={`modal-dialog modal-dialog-centered ${
-          etapa === "CHECKOUT_EMBARCADO" ? "modal-xl" : "modal-lg"
+          etapa === "CHECKOUT_EMBARCADO" ? "modal-xl" : ""
         }`}
         style={{
-          maxWidth: etapa === "CHECKOUT_EMBARCADO" ? "1260px" : "800px",
+          maxWidth: etapa === "CHECKOUT_EMBARCADO" ? "1200px" : "680px",
           width: etapa === "CHECKOUT_EMBARCADO" ? "98%" : "95%",
           transition: "max-width 0.3s ease-in-out, width 0.3s ease-in-out",
         }}
       >
         <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-          {/* HEADER */}
+          {/* CABEÇALHO CLARO E ACOLHEDOR EM AZUL */}
           <div
-            className="p-3 text-white d-flex justify-content-between align-items-center"
+            className="p-3 px-4 text-white d-flex justify-content-between align-items-center"
             style={{
-              background: "linear-gradient(135deg, #009ee3 0%, #0077b6 100%)",
+              background: "linear-gradient(135deg, #0077b6 0%, #009ee3 100%)",
             }}
           >
             <div className="d-flex align-items-center gap-2">
-              <i className="bi bi-shield-lock-fill fs-4 text-warning"></i>
+              <i className="bi bi-shield-check fs-3 text-warning"></i>
               <div>
-                <h5 className="fw-bold mb-0">
-                  {etapa === "CHECKOUT_EMBARCADO"
-                    ? "Mercado Pago & Mercado Livre Checkout"
-                    : "Mercado Pago Checkout"}
-                </h5>
-                <small className="text-white-50">
-                  {etapa === "CHECKOUT_EMBARCADO"
-                    ? "Ambiente Integrado Oficial (Site visível ao fundo)"
-                    : "Ambiente Nativo Seguro & Criptografado"}
+                <h4 className="fw-bold mb-0" style={{ fontSize: "1.3rem" }}>
+                  {etapa === "SUCESSO"
+                    ? "Comprovante de Pagamento"
+                    : etapa === "PIX_GERADO"
+                    ? "Pagar com PIX"
+                    : etapa === "CHECKOUT_EMBARCADO"
+                    ? "Pagamento com Cartão / Mercado Pago"
+                    : isConsulta
+                    ? "Pagamento da Consulta"
+                    : "Pagamento do Plano Médico"}
+                </h4>
+                <small className="text-white-50" style={{ fontSize: "0.88rem" }}>
+                  Ambiente simples e protegido da Active Age
                 </small>
               </div>
             </div>
             <button
               type="button"
-              className="btn-close btn-close-white"
+              className="btn btn-outline-light btn-sm fw-bold px-3 py-1 rounded-pill"
               onClick={onClose}
               disabled={isProcessando}
               aria-label="Fechar"
-            ></button>
+            >
+              ✕ Fechar
+            </button>
           </div>
 
           {/* CORPO DO MODAL */}
-          <div
-            className={`modal-body bg-light ${
-              etapa === "CHECKOUT_EMBARCADO" ? "p-2 p-md-3" : "p-4"
-            }`}
-          >
+          <div className={`modal-body bg-light ${etapa === "CHECKOUT_EMBARCADO" ? "p-2 p-md-3" : "p-3 p-md-4"}`}>
             {etapa === "SUCESSO" ? (
-              <div className="text-center py-4">
+              /* ETAPA: SUCESSO */
+              <div className="text-center py-3">
                 <div
                   className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle text-success shadow-sm"
                   style={{
                     width: "80px",
                     height: "80px",
                     backgroundColor: "#e8f5e9",
-                    fontSize: "2.6rem",
+                    fontSize: "2.8rem",
                   }}
                 >
                   <i className="bi bi-check-circle-fill"></i>
                 </div>
                 <h3 className="fw-bold mb-2 text-dark">
-                  Pagamento Aprovado com Sucesso!
+                  Pagamento Confirmado!
                 </h3>
-                <p className="text-muted mb-4 fs-6">
+                <p className="text-muted mb-4 fs-5">
                   {isConsulta
-                    ? `Sua teleconsulta com ${
-                        medico?.nome || "o médico"
-                      } foi confirmada e quitada.`
-                    : `Seu consultório virtual no ${plano.nome} foi ativado com sucesso.`}
+                    ? `Sua consulta com ${medico?.nome || "o médico"} está confirmada.`
+                    : `Seu consultório virtual no ${plano.nome} foi ativado.`}
                 </p>
 
+                {/* RESUMO SIMPLES */}
                 <div
-                  className="bg-white p-4 rounded-3 border text-start mb-4 mx-auto shadow-sm"
-                  style={{ maxWidth: "440px" }}
+                  className="bg-white p-4 rounded-4 border text-start mb-4 mx-auto shadow-sm"
+                  style={{ maxWidth: "480px" }}
                 >
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted small">Código da Transação:</span>
-                    <strong className="font-monospace text-primary">
-                      {transacaoId}
-                    </strong>
-                  </div>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted small">
-                      {isConsulta ? "Serviço:" : "Plano:"}
-                    </span>
+                  <div className="d-flex justify-content-between mb-2 fs-6">
+                    <span className="text-muted">Serviço:</span>
                     <strong className="text-dark">{plano.nome}</strong>
                   </div>
                   {isConsulta && plano.dataHoraFormatada && (
-                    <div className="d-flex justify-content-between mb-2">
-                      <span className="text-muted small">Data e Horário:</span>
-                      <strong className="text-dark">
-                        {plano.dataHoraFormatada}
-                      </strong>
+                    <div className="d-flex justify-content-between mb-2 fs-6">
+                      <span className="text-muted">Horário Agendado:</span>
+                      <strong className="text-dark">{plano.dataHoraFormatada}</strong>
                     </div>
                   )}
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted small">Forma de Pagamento:</span>
-                    <span className="badge bg-primary-subtle text-primary border">
+                  <div className="d-flex justify-content-between mb-2 fs-6">
+                    <span className="text-muted">Forma de Pagamento:</span>
+                    <span className="badge bg-success-subtle text-success fs-6 border px-2 py-1">
                       {detalhesFinalizados?.metodo || "Mercado Pago"}
                     </span>
                   </div>
-                  <hr className="my-2" />
+                  <hr className="my-3" />
                   <div className="d-flex justify-content-between align-items-center">
-                    <span className="fw-bold text-dark">Valor Quitado:</span>
-                    <strong className="text-success fs-5">
-                      R$ {Number(plano.valor || 0).toFixed(2)}
+                    <span className="fw-bold text-dark fs-5">Valor Pago:</span>
+                    <strong className="text-success fs-3">
+                      R$ {Number(plano.valor || 0).toFixed(2).replace(".", ",")}
                     </strong>
                   </div>
                 </div>
 
-                <div className="d-flex justify-content-center gap-2">
-                  <button
-                    className="btn btn-success btn-lg px-4 fw-bold shadow-sm"
-                    onClick={handleConcluirSucesso}
-                  >
-                    <i className="bi bi-arrow-right-circle-fill me-2"></i>
-                    {isConsulta
-                      ? "Ver Minhas Consultas no Painel"
-                      : "Acessar Meu Consultório Virtual"}
-                  </button>
-                </div>
+                <button
+                  className="btn btn-success btn-lg px-4 py-3 fw-bold shadow-sm rounded-pill fs-5"
+                  onClick={handleConcluirSucesso}
+                >
+                  <i className="bi bi-arrow-right-circle-fill me-2"></i>
+                  {isConsulta ? "Ir para Minhas Consultas" : "Acessar Meu Consultório"}
+                </button>
               </div>
             ) : etapa === "PIX_GERADO" ? (
+              /* ETAPA: PIX GERADO */
               <div className="text-center py-2">
-                <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
-                  <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-bold">
-                    <i className="bi bi-qr-code-scan me-1"></i> PIX Mercado Pago
+                {/* VALOR EM DESTAQUE */}
+                <div className="p-3 mb-3 bg-white rounded-4 border shadow-sm">
+                  <span className="text-muted small text-uppercase fw-semibold d-block">
+                    Valor a ser pago:
+                  </span>
+                  <span className="text-success fw-bold" style={{ fontSize: "2.3rem" }}>
+                    R$ {Number(plano.valor || 0).toFixed(2).replace(".", ",")}
                   </span>
                 </div>
 
-                <h4
-                  className="fw-bold mb-1"
-                  style={{ color: "var(--aa-brown)" }}
-                >
-                  Pague R$ {Number(plano.valor || 0).toFixed(2)} via PIX
-                </h4>
-                <p className="text-muted small mb-3">
-                  Abra o aplicativo de qualquer banco, escolha <strong>PIX</strong>{" "}
-                  e escaneie o QR Code abaixo:
-                </p>
-
-                {/* ÁREA DO QR CODE */}
-                <div className="bg-white p-3 rounded-4 shadow-sm border d-inline-block mb-3">
-                  <img
-                    src={urlQrCode}
-                    alt="QR Code PIX Válido"
-                    style={{ width: "210px", height: "210px" }}
-                    className="img-fluid rounded"
-                  />
-                  <div className="mt-2 small text-muted d-flex align-items-center justify-content-center gap-1">
-                    <i className="bi bi-clock-history text-warning"></i>
-                    <span>Expira em: </span>
-                    <strong className="text-danger">
-                      {formatarTempo(tempoRestantePix)}
-                    </strong>
-                  </div>
-                </div>
-
-                {/* CÓDIGO PIX COPIA E COLA */}
-                <div className="mb-4 text-start">
-                  <label className="form-label fw-bold small text-muted text-uppercase d-flex justify-content-between">
-                    <span>Código PIX Copia e Cola:</span>
-                    <span className="text-success small fw-semibold">
-                      <i className="bi bi-shield-check me-1"></i>Padrão BACEN Oficial
-                    </span>
-                  </label>
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="form-control font-monospace small bg-white text-dark"
-                      value={codigoPixCopiaCola}
-                      readOnly
-                    />
-                    <button
-                      className="btn btn-primary fw-bold px-3"
-                      type="button"
-                      onClick={copiarCodigoPix}
+                {/* INSTRUÇÕES SIMPLES EM 3 PASSOS */}
+                <div className="bg-white p-3 p-md-4 rounded-4 border shadow-sm mb-3 text-start">
+                  <h5 className="fw-bold text-dark mb-3 fs-5">
+                    Como pagar no seu celular:
+                  </h5>
+                  <div className="d-flex align-items-start gap-3 mb-3">
+                    <div
+                      className="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
+                      style={{ width: "32px", height: "32px", fontSize: "1.1rem" }}
                     >
-                      <i className="bi bi-clipboard me-1"></i> Copiar Código
-                    </button>
+                      1
+                    </div>
+                    <p className="mb-0 fs-6 text-dark" style={{ lineHeight: "1.4" }}>
+                      Abra o <strong>aplicativo do seu banco</strong> no celular.
+                    </p>
+                  </div>
+
+                  <div className="d-flex align-items-start gap-3 mb-3">
+                    <div
+                      className="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
+                      style={{ width: "32px", height: "32px", fontSize: "1.1rem" }}
+                    >
+                      2
+                    </div>
+                    <p className="mb-0 fs-6 text-dark" style={{ lineHeight: "1.4" }}>
+                      Escolha a opção <strong>PIX</strong> e aponte a câmera para o QR Code abaixo:
+                    </p>
+                  </div>
+
+                  {/* QR CODE CENTRALIZADO */}
+                  <div className="text-center my-3">
+                    <div className="p-3 bg-light rounded-4 border d-inline-block shadow-sm">
+                      <img
+                        src={urlQrCode}
+                        alt="QR Code PIX"
+                        style={{ width: "210px", height: "210px" }}
+                        className="img-fluid rounded-3"
+                      />
+                      <div className="mt-2 small text-muted d-flex align-items-center justify-content-center gap-1">
+                        <i className="bi bi-clock text-warning"></i>
+                        <span>Tempo restante: </span>
+                        <strong className="text-danger fs-6">{formatarTempo(tempoRestantePix)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="d-flex align-items-start gap-3">
+                    <div
+                      className="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
+                      style={{ width: "32px", height: "32px", fontSize: "1.1rem" }}
+                    >
+                      3
+                    </div>
+                    <div className="w-100">
+                      <p className="mb-2 fs-6 text-dark" style={{ lineHeight: "1.4" }}>
+                        Se preferir pagar no mesmo celular, copie o código PIX:
+                      </p>
+                      <button
+                        className="btn btn-outline-primary btn-lg w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3"
+                        type="button"
+                        onClick={copiarCodigoPix}
+                      >
+                        <i className="bi bi-clipboard fs-5"></i> Copiar Código PIX
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="d-flex justify-content-center gap-2">
+                {/* BOTÕES DE AÇÃO */}
+                <div className="d-flex flex-column gap-2 mt-3">
                   <button
-                    className="btn btn-outline-secondary px-3"
-                    onClick={() => setEtapa("FORMULARIO")}
-                    disabled={isProcessando}
-                  >
-                    <i className="bi bi-arrow-left me-1"></i> Alterar Método
-                  </button>
-                  <button
-                    className="btn btn-success fw-bold px-4 shadow-sm"
+                    className="btn btn-success btn-lg py-3 fw-bold shadow-sm rounded-pill fs-5 d-flex align-items-center justify-content-center gap-2"
                     onClick={() =>
                       processarFinalizacao({
                         transacaoId,
@@ -956,143 +960,56 @@ export function ModalPagamentoMercadoPago({
                     }
                     disabled={isProcessando}
                   >
-                    <i className="bi bi-check-circle me-1"></i> Já Realizei o Pagamento
+                    <i className="bi bi-check-circle-fill fs-4"></i>
+                    Já Fiz o Pagamento no Meu Banco
                   </button>
-                </div>
-              </div>
-            ) : etapa === "BOLETO_GERADO" ? (
-              <div className="text-center py-2">
-                <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
-                  <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold">
-                    <i className="bi bi-upc-scan me-1"></i> Boleto Bancário
-                  </span>
-                </div>
-
-                <h4
-                  className="fw-bold mb-1"
-                  style={{ color: "var(--aa-brown)" }}
-                >
-                  Boleto de R$ {Number(plano.valor || 0).toFixed(2)}
-                </h4>
-                <p className="text-muted small mb-3">
-                  Vencimento em: <strong>{dataVencimentoBoleto}</strong>
-                </p>
-
-                <div className="bg-white p-4 rounded-4 shadow-sm border mb-4 text-start">
-                  <label className="form-label fw-bold small text-muted text-uppercase">
-                    Linha Digitável para Pagamento:
-                  </label>
-                  <div className="input-group mb-3">
-                    <input
-                      type="text"
-                      className="form-control font-monospace small bg-light"
-                      value={linhaDigitavel}
-                      readOnly
-                    />
-                    <button
-                      className="btn btn-primary fw-bold px-3"
-                      type="button"
-                      onClick={copiarLinhaDigitavel}
-                    >
-                      <i className="bi bi-clipboard me-1"></i> Copiar Linha
-                    </button>
-                  </div>
-
-                  <div
-                    className="p-3 bg-light rounded text-center border"
-                    style={{ letterSpacing: "5px", fontFamily: "monospace" }}
-                  >
-                    <div className="fs-3 fw-bold text-dark">
-                      ||| | | |||| || | ||||| || | |||| ||
-                    </div>
-                  </div>
-                </div>
-
-                <div className="d-flex justify-content-center gap-2">
                   <button
-                    className="btn btn-outline-secondary px-3"
+                    className="btn btn-link text-secondary text-decoration-none mt-1"
                     onClick={() => setEtapa("FORMULARIO")}
                     disabled={isProcessando}
                   >
-                    <i className="bi bi-arrow-left me-1"></i> Alterar Método
-                  </button>
-                  <button
-                    className="btn btn-success fw-bold px-4 shadow-sm"
-                    onClick={() =>
-                      processarFinalizacao({
-                        transacaoId,
-                        metodo: "Boleto Bancário",
-                        planoNome: plano.nome,
-                        valor: plano.valor,
-                        detalhes: `Vencimento: ${dataVencimentoBoleto}`,
-                      })
-                    }
-                    disabled={isProcessando}
-                  >
-                    <i className="bi bi-check-circle me-1"></i> Confirmar Pagamento do Boleto
+                    ← Voltar e escolher outra forma de pagamento
                   </button>
                 </div>
               </div>
             ) : etapa === "CHECKOUT_EMBARCADO" ? (
-              /* TELA EMBARCADA DO CHECKOUT DO MERCADO PAGO / MERCADO LIVRE (TAMANHO DO MODAL) */
+              /* ETAPA: CHECKOUT MERCADO PAGO INTEGRADO */
               <div className="py-1">
-                {/* BARRA SUPERIOR DE INFORMAÇÕES E CONTROLES */}
-                <div className="d-flex justify-content-between align-items-center mb-3 bg-white p-2 px-3 rounded-3 border shadow-sm">
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="badge bg-primary text-white px-2 py-1 small fw-semibold">
-                      <i className="bi bi-wallet2 me-1"></i> Mercado Pago / Mercado Livre
-                    </span>
-                    <span className="small text-muted d-none d-md-inline">
-                      Total a pagar: <strong className="text-success">R$ {Number(plano.valor || 0).toFixed(2)}</strong>
-                    </span>
+                {/* INSTRUÇÃO CLARA */}
+                <div className="d-flex justify-content-between align-items-center mb-2 bg-white p-3 rounded-3 border shadow-sm">
+                  <div>
+                    <h6 className="fw-bold mb-0 text-dark fs-6">
+                      <i className="bi bi-credit-card-2-front text-primary me-2"></i>
+                      Tela de Pagamento do Mercado Pago
+                    </h6>
+                    <small className="text-muted">
+                      Preencha os dados abaixo. Após concluir, clique em <strong>Confirmar Pagamento</strong>.
+                    </small>
                   </div>
-
-                  <div className="d-flex align-items-center gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => setEtapa("FORMULARIO")}
-                      disabled={isProcessando}
-                    >
-                      <i className="bi bi-arrow-left me-1"></i> Voltar às opções
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary"
-                      title="Recarregar tela de pagamento"
-                      onClick={() => {
-                        setIsIframeCarregando(true);
-                        const iframe = document.getElementById("mpCheckoutIframe") as HTMLIFrameElement;
-                        if (iframe) iframe.src = checkoutUrl;
-                      }}
-                    >
-                      <i className="bi bi-arrow-clockwise"></i>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary px-3 py-1 rounded-pill"
+                    onClick={() => setEtapa("FORMULARIO")}
+                    disabled={isProcessando}
+                  >
+                    ← Trocar Método
+                  </button>
                 </div>
 
-                {/* CONTAINER DO IFRAME EMBARCADO NO TAMANHO DO MODAL */}
+                {/* IFRAME */}
                 <div
                   className="position-relative w-100 rounded-3 overflow-hidden shadow-sm border bg-white"
-                  style={{ height: "680px" }}
+                  style={{ height: "650px" }}
                 >
                   {isIframeCarregando && (
-                    <div
-                      className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white z-2"
-                    >
-                      <div
-                        className="spinner-border text-primary mb-3"
-                        style={{ width: "3rem", height: "3rem" }}
-                        role="status"
-                      >
+                    <div className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white z-2">
+                      <div className="spinner-border text-primary mb-3" style={{ width: "3rem", height: "3rem" }}>
                         <span className="visually-hidden">Carregando...</span>
                       </div>
-                      <h6 className="fw-bold text-dark mb-1">
-                        Carregando Mercado Pago / Mercado Livre...
-                      </h6>
-                      <small className="text-muted">
-                        Preparando o ambiente seguro de pagamento
-                      </small>
+                      <h5 className="fw-bold text-dark mb-1">
+                        Carregando a tela de pagamento...
+                      </h5>
+                      <small className="text-muted">Por favor, aguarde alguns instantes</small>
                     </div>
                   )}
 
@@ -1106,327 +1023,204 @@ export function ModalPagamentoMercadoPago({
                   />
                 </div>
 
-                {/* RODAPÉ COM CONFIRMAÇÃO DIRETA */}
+                {/* RODAPÉ COM BOTÃO GRANDE DE CONFIRMAR */}
                 <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                  <div className="small text-muted">
-                    <i className="bi bi-shield-check text-success me-1"></i>
-                    O site continua visível em segundo plano.
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary px-3 py-2 rounded-pill"
+                    onClick={() => setEtapa("FORMULARIO")}
+                    disabled={isProcessando}
+                  >
+                    ← Voltar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-lg fw-bold px-4 py-2 shadow-sm rounded-pill fs-5 d-flex align-items-center gap-2 text-white"
+                    style={{ backgroundColor: "#009ee3", borderColor: "#0077b6" }}
+                    onClick={handleConfirmarPagamentoRealizado}
+                    disabled={isProcessando}
+                  >
+                    {isProcessando ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm"></span>
+                        Verificando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-check-circle-fill"></i>
+                        Já Concluí o Pagamento / Confirmar
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ETAPA INICIAL: FORMULÁRIO SIMPLIFICADO PARA IDOSOS */
+              <div className="py-2">
+                {/* 1. RESUMO CLARO DA CONSULTA / SERVIÇO */}
+                <div className="p-3 p-md-4 mb-4 rounded-4 border bg-white shadow-sm">
+                  <div className="row align-items-center g-3">
+                    <div className="col-12 col-md-7">
+                      <span className="badge bg-primary-subtle text-primary fs-6 px-3 py-1 rounded-pill mb-2 fw-semibold">
+                        {isConsulta ? "🩺 Teleconsulta" : "💼 Plano Active Age"}
+                      </span>
+                      <h4 className="fw-bold text-dark mb-1" style={{ fontSize: "1.35rem" }}>
+                        {isConsulta ? (medico?.nome ? `Dr(a). ${medico.nome}` : plano.nome) : plano.nome}
+                      </h4>
+                      {isConsulta && plano.dataHoraFormatada && (
+                        <p className="text-secondary mb-0 fs-6 mt-1">
+                          <i className="bi bi-calendar-check text-primary me-2"></i>
+                          Horário: <strong>{plano.dataHoraFormatada}</strong>
+                        </p>
+                      )}
+                    </div>
+                    <div className="col-12 col-md-5 text-md-end border-top border-md-top-0 pt-3 pt-md-0">
+                      <span className="text-muted d-block small text-uppercase fw-semibold">
+                        Valor a Pagar:
+                      </span>
+                      <strong className="text-success fw-bold" style={{ fontSize: "2.3rem", lineHeight: 1.1 }}>
+                        R$ {Number(plano.valor || 0).toFixed(2).replace(".", ",")}
+                      </strong>
+                    </div>
                   </div>
-                  <div className="d-flex gap-2">
+                </div>
+
+                {/* 2. ESCOLHA SIMPLES DO MÉTODO DE PAGAMENTO */}
+                <h5 className="fw-bold text-dark mb-3 fs-5">
+                  Escolha como deseja pagar:
+                </h5>
+
+                {/* CARD 1: PIX */}
+                <div
+                  className={`p-3 p-md-4 rounded-4 mb-3 transition-all ${
+                    metodoSelecionado === "PIX"
+                      ? "bg-success bg-opacity-10 shadow-sm"
+                      : "bg-white"
+                  }`}
+                  style={{
+                    cursor: "pointer",
+                    border: metodoSelecionado === "PIX" ? "2.5px solid #198754" : "2px solid #e2e8f0",
+                  }}
+                  onClick={() => setMetodoSelecionado("PIX")}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center gap-3">
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0"
+                        style={{ width: "52px", height: "52px", backgroundColor: "#198754", fontSize: "1.6rem" }}
+                      >
+                        <i className="bi bi-qr-code"></i>
+                      </div>
+                      <div>
+                        <div className="d-flex align-items-center gap-2">
+                          <h5 className="fw-bold mb-0 text-dark fs-5">Pagar com PIX</h5>
+                          <span className="badge bg-success text-white small px-2 py-1 rounded-pill">
+                            Mais Rápido
+                          </span>
+                        </div>
+                        <p className="text-muted mb-0 mt-1" style={{ fontSize: "0.95rem" }}>
+                          Pague pelo aplicativo do seu banco com o celular.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="form-check fs-4 me-2">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="metodoPagamento"
+                        checked={metodoSelecionado === "PIX"}
+                        onChange={() => setMetodoSelecionado("PIX")}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 2: CARTÃO DE CRÉDITO OU MERCADO PAGO */}
+                <div
+                  className={`p-3 p-md-4 rounded-4 mb-4 transition-all ${
+                    metodoSelecionado === "SALDO_MP"
+                      ? "bg-primary bg-opacity-10 shadow-sm"
+                      : "bg-white"
+                  }`}
+                  style={{
+                    cursor: "pointer",
+                    border: metodoSelecionado === "SALDO_MP" ? "2.5px solid #009ee3" : "2px solid #e2e8f0",
+                  }}
+                  onClick={() => setMetodoSelecionado("SALDO_MP")}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center gap-3">
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0"
+                        style={{ width: "52px", height: "52px", backgroundColor: "#009ee3", fontSize: "1.6rem" }}
+                      >
+                        <i className="bi bi-credit-card-2-front"></i>
+                      </div>
+                      <div>
+                        <h5 className="fw-bold mb-0 text-dark fs-5">Cartão de Crédito ou Mercado Pago</h5>
+                        <p className="text-muted mb-0 mt-1" style={{ fontSize: "0.95rem" }}>
+                          Pague com cartão de crédito, débito ou conta Mercado Pago.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="form-check fs-4 me-2">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="metodoPagamento"
+                        checked={metodoSelecionado === "SALDO_MP"}
+                        onChange={() => setMetodoSelecionado("SALDO_MP")}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. BOTÃO DE AÇÃO PRINCIPAL GRANDE */}
+                <div className="pt-2">
+                  {metodoSelecionado === "PIX" ? (
                     <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => setEtapa("FORMULARIO")}
-                      disabled={isProcessando}
-                    >
-                      <i className="bi bi-arrow-left me-1"></i> Voltar
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-success btn-sm fw-bold px-3 shadow-sm"
-                      onClick={handleConfirmarPagamentoRealizado}
+                      className="btn btn-success btn-lg w-100 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-pill fs-5"
+                      onClick={handleGerarPix}
                       disabled={isProcessando}
                     >
                       {isProcessando ? (
                         <>
-                          <span className="spinner-border spinner-border-sm me-1"></span>
-                          Confirmando...
+                          <span className="spinner-border spinner-border-sm"></span>
+                          Gerando PIX...
                         </>
                       ) : (
                         <>
-                          <i className="bi bi-check-circle-fill me-1"></i> Já Paguei / Confirmar Pagamento
+                          <i className="bi bi-qr-code-scan fs-4"></i>
+                          Continuar com PIX
                         </>
                       )}
                     </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* ETAPA FORMULÁRIO COM TODAS AS FORMAS DE PAGAMENTO */
-              <div className="row g-4">
-                {/* COLUNA RESUMO DO PEDIDO */}
-                <div className="col-12 col-md-5 order-md-2">
-                  <div className="card border-0 shadow-sm rounded-3 p-3 bg-white">
-                    <h6
-                      className="fw-bold mb-3"
-                      style={{ color: "var(--aa-brown)" }}
-                    >
-                      <i className="bi bi-cart-check me-2 text-primary"></i>
-                      Resumo do Pedido
-                    </h6>
-
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <span className="text-muted small">
-                        {isConsulta ? "Serviço:" : "Plano:"}
-                      </span>
-                      <strong
-                        className="text-dark text-truncate"
-                        style={{ maxWidth: "160px" }}
-                      >
-                        {plano.nome}
-                      </strong>
-                    </div>
-
-                    {isConsulta ? (
-                      <>
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="text-muted small">Médico:</span>
-                          <span
-                            className="small text-truncate fw-semibold"
-                            style={{ maxWidth: "160px" }}
-                          >
-                            {medico?.nome || "Médico Especialista"}
-                          </span>
-                        </div>
-
-                        {medico?.crm && (
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="text-muted small">CRM:</span>
-                            <span className="badge bg-light text-dark border small">
-                              {medico.crm}
-                            </span>
-                          </div>
-                        )}
-
-                        {plano.dataHoraFormatada && (
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="text-muted small">Horário:</span>
-                            <span className="small text-dark fw-semibold">
-                              {plano.dataHoraFormatada}
-                            </span>
-                          </div>
-                        )}
-
-                        {plano.duracaoMinutos && (
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <span className="text-muted small">Duração:</span>
-                            <span className="badge bg-light text-dark border">
-                              {plano.duracaoMinutos} min
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="text-muted small">Modalidade:</span>
-                          <span className="badge bg-light text-dark border">
-                            {plano.ciclo === "MENSAL"
-                              ? "Mensal Recorrente"
-                              : "Anual (com Desconto)"}
-                          </span>
-                        </div>
-
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="text-muted small">
-                            Médico Titular:
-                          </span>
-                          <span
-                            className="small text-truncate"
-                            style={{ maxWidth: "160px" }}
-                          >
-                            {medico?.nome || "Titular da Conta"}
-                          </span>
-                        </div>
-                      </>
-                    )}
-
-                    <hr className="my-2" />
-
-                    <div className="d-flex justify-content-between align-items-center my-2">
-                      <span className="fw-bold">Total a Pagar:</span>
-                      <span
-                        className="fs-4 fw-bold"
-                        style={{ color: "var(--aa-orange)" }}
-                      >
-                        R$ {Number(plano.valor || 0).toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="p-2 bg-light rounded text-center small text-muted mt-2 border">
-                      <i className="bi bi-shield-check text-success me-1"></i>
-                      Ambiente seguro processado via Mercado Pago.
-                    </div>
-
+                  ) : (
                     <button
-                      type="button"
-                      className="btn btn-primary btn-sm w-100 mt-2 fw-bold shadow-sm"
-                      style={{ backgroundColor: "#009ee3", borderColor: "#0077b6" }}
+                      className="btn btn-primary btn-lg w-100 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 rounded-pill fs-5 text-white"
+                      style={{
+                        backgroundColor: "#009ee3",
+                        borderColor: "#008ac5",
+                      }}
                       onClick={handlePagarComSaldoMercadoPago}
                       disabled={isProcessando}
                     >
                       {isProcessando ? (
                         <>
-                          <span className="spinner-border spinner-border-sm me-1"></span>
-                          Redirecionando...
+                          <span className="spinner-border spinner-border-sm"></span>
+                          Abrindo pagamento...
                         </>
                       ) : (
                         <>
-                          <i className="bi bi-box-arrow-right me-1"></i> Pagar com Mercado Pago
+                          <i className="bi bi-credit-card fs-4"></i>
+                          Continuar para Pagamento com Cartão
                         </>
                       )}
                     </button>
-                  </div>
-                </div>
-
-                {/* COLUNA DE ESCOLHA DAS FORMAS DE PAGAMENTO */}
-                <div className="col-12 col-md-7 order-md-1">
-                  {/* TABS DE SELEÇÃO */}
-                  <div className="d-flex gap-1 p-1 bg-white rounded-3 border mb-3 flex-wrap">
-                    <button
-                      type="button"
-                      className={`btn flex-grow-1 fw-bold btn-sm py-2 d-flex align-items-center justify-content-center gap-1 ${
-                        metodoSelecionado === "SALDO_MP"
-                          ? "text-white shadow-sm"
-                          : "btn-light text-muted"
-                      }`}
-                      style={{
-                        backgroundColor:
-                          metodoSelecionado === "SALDO_MP" ? "#009ee3" : undefined,
-                        borderColor:
-                          metodoSelecionado === "SALDO_MP" ? "#009ee3" : undefined,
-                      }}
-                      onClick={() => setMetodoSelecionado("SALDO_MP")}
-                    >
-                      <i className="bi bi-wallet2"></i> Mercado Pago / Mercado Livre
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`btn flex-grow-1 fw-bold btn-sm py-2 d-flex align-items-center justify-content-center gap-1 ${
-                        metodoSelecionado === "PIX"
-                          ? "btn-success shadow-sm"
-                          : "btn-light text-muted"
-                      }`}
-                      onClick={() => setMetodoSelecionado("PIX")}
-                    >
-                      <i className="bi bi-qr-code"></i> PIX
-                    </button>
-                  </div>
-
-                  {/* CONTEÚDO MERCADO PAGO / MERCADO LIVRE */}
-                  {metodoSelecionado === "SALDO_MP" && (
-                    <div className="card border-0 shadow-sm p-4 bg-white rounded-3">
-                      <div
-                        className="p-3 rounded-3 text-white mb-3 shadow-sm position-relative overflow-hidden"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #009ee3 0%, #0077b6 100%)",
-                        }}
-                      >
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <div className="d-flex align-items-center gap-2">
-                            <div
-                              className="bg-white rounded-circle d-flex align-items-center justify-content-center"
-                              style={{
-                                width: "40px",
-                                height: "40px",
-                                color: "#009ee3",
-                                fontSize: "1.25rem",
-                              }}
-                            >
-                              <i className="bi bi-shield-check"></i>
-                            </div>
-                            <div>
-                              <span className="fw-bold fs-6 d-block">
-                                Mercado Pago & Mercado Livre
-                              </span>
-                              <small className="text-white-50">
-                                Checkout Oficial Integrado
-                              </small>
-                            </div>
-                          </div>
-                          <span className="badge bg-white text-primary fw-bold px-2 py-1 shadow-sm">
-                            <i className="bi bi-check-circle-fill me-1 text-success"></i>{" "}
-                            Oficial
-                          </span>
-                        </div>
-
-                        <div className="mt-3 pt-2 border-top border-white border-opacity-25">
-                          <p
-                            className="mb-0 small text-white-75"
-                            style={{ fontSize: "0.85rem" }}
-                          >
-                            Pague com seu <strong>Saldo em Conta</strong>, cartões de crédito salvos ou <strong>Mercado Crédito</strong>. Ao clicar no botão abaixo, a tela de pagamento abrirá diretamente nesta janela (mantendo o site ao fundo).
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        className="btn btn-lg w-100 fw-bold shadow-sm text-white"
-                        style={{ backgroundColor: "#009ee3", borderColor: "#0077b6" }}
-                        onClick={handlePagarComSaldoMercadoPago}
-                        disabled={isProcessando}
-                      >
-                        {isProcessando ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2"></span>
-                            Abrindo Mercado Pago / Mercado Livre...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-box-arrow-right me-2"></i>
-                            Pagar com Mercado Pago / Mercado Livre
-                          </>
-                        )}
-                      </button>
-
-                      <div className="text-center mt-3">
-                        <small className="text-muted">
-                          <i className="bi bi-shield-check text-success me-1"></i>
-                          Pagamento integrado diretamente na mesma janela (o site permanece ao fundo).
-                        </small>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CONTEÚDO PIX */}
-                  {metodoSelecionado === "PIX" && (
-                    <div className="card border-0 shadow-sm p-4 bg-white rounded-3 text-center">
-                      <div
-                        className="mx-auto mb-2 d-flex align-items-center justify-content-center rounded-circle text-success"
-                        style={{
-                          width: "56px",
-                          height: "56px",
-                          backgroundColor: "#e8f5e9",
-                          fontSize: "1.9rem",
-                        }}
-                      >
-                        <i className="bi bi-lightning-charge-fill"></i>
-                      </div>
-                      <h5 className="fw-bold mb-1 text-dark">
-                        Pagamento Instantâneo via PIX
-                      </h5>
-                      <p className="text-muted small mb-3">
-                        {isConsulta
-                          ? "Confirmação imediata e liberação automática da teleconsulta."
-                          : "Liberação instantânea do consultório médico e emissão de recibo."}
-                      </p>
-
-                      <div className="alert alert-success border-0 small text-start mb-4 py-2">
-                        <i className="bi bi-check2-circle me-1"></i>
-                        Sem taxas adicionais • Padrão Banco Central do Brasil •
-                        Aprovação em segundos
-                      </div>
-
-                      <button
-                        className="btn btn-success btn-lg w-100 fw-bold shadow-sm"
-                        onClick={handleGerarPix}
-                        disabled={isProcessando}
-                      >
-                        {isProcessando ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2"></span>
-                            Gerando QR Code...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-qr-code-scan me-2"></i>
-                            Gerar Chave e QR Code PIX
-                          </>
-                        )}
-                      </button>
-                    </div>
                   )}
                 </div>
               </div>
@@ -1437,3 +1231,4 @@ export function ModalPagamentoMercadoPago({
     </div>
   );
 }
+
