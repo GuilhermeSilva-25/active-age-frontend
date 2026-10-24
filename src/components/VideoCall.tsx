@@ -13,6 +13,8 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
     { urls: "stun:stun.relay.metered.ca:80" },
     {
       urls: "turn:standard.relay.metered.ca:80",
@@ -30,6 +32,7 @@ const ICE_SERVERS: RTCConfiguration = {
       credential: "openrelayproject",
     },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export const VideoCall: React.FC<VideoCallProps> = ({
@@ -58,6 +61,8 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   >("connecting");
   const [errorMessage, setErrorMessage] = useState("");
   const [callDuration, setCallDuration] = useState(0);
+  const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
+  const [remoteHasVideo, setRemoteHasVideo] = useState(true);
 
   useEffect(() => {
     let timer: any = null;
@@ -71,6 +76,17 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     return () => {
       if (timer) clearInterval(timer);
     };
+  }, [callStatus]);
+
+  useEffect(() => {
+    if (callStatus === "connected" && remoteVideoRef.current) {
+      remoteVideoRef.current.muted = false;
+      remoteVideoRef.current.volume = 1.0;
+      remoteVideoRef.current.play().catch((err) => {
+        console.warn("Autoplay bloqueado pelo navegador:", err);
+        setNeedsAudioUnlock(true);
+      });
+    }
   }, [callStatus]);
 
   const formatDuration = (seconds: number) => {
@@ -122,13 +138,6 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     const connectWebSocket = () => {
       if (!isMounted) return;
 
-      const isLocalhost =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1";
-
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      
-      // Conecta ao servidor de sinalização oficial na nuvem ou VITE_WS_URL
       const wsUrl =
         (import.meta as any).env?.VITE_WS_URL ||
         "wss://active-age-backend.onrender.com/ws/video";
@@ -192,7 +201,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
               }
             }
           } catch (msgErr) {
-            console.error(msgErr);
+            console.error("Erro ao tratar mensagem WS:", msgErr);
           }
         };
 
@@ -225,7 +234,6 @@ export const VideoCall: React.FC<VideoCallProps> = ({
       try {
         setCallStatus("connecting");
         setErrorMessage("Iniciando dispositivos e conectando à sala...");
-        // Acorda o backend do Render caso esteja em modo de hibernação
         fetch("https://active-age-backend.onrender.com/api/usuarios", { method: "HEAD" }).catch(() => null);
         await setupMediaStream();
         connectWebSocket();
@@ -250,37 +258,88 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     };
   }, [roomId, userId]);
 
+  const attachLocalTracks = (pc: RTCPeerConnection) => {
+    if (!localStreamRef.current) return;
+    const senders = pc.getSenders();
+    localStreamRef.current.getTracks().forEach((track) => {
+      const alreadyAdded = senders.some((s) => s.track && s.track.id === track.id);
+      if (!alreadyAdded) {
+        try {
+          pc.addTrack(track, localStreamRef.current!);
+        } catch (e) {
+          console.warn("Erro ao anexar track local:", e);
+        }
+      }
+    });
+  };
+
   const getOrCreatePeerConnection = (): RTCPeerConnection => {
     if (pcRef.current && pcRef.current.signalingState !== "closed") {
+      attachLocalTracks(pcRef.current);
       return pcRef.current;
     }
 
     const pc = new RTCPeerConnection(ICE_SERVERS);
     pcRef.current = pc;
 
-    remoteStreamRef.current = new MediaStream();
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = remoteStreamRef.current;
-    }
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => {
-        try {
-          pc.addTrack(track, localStreamRef.current!);
-        } catch (e) {}
-      });
-    }
+    attachLocalTracks(pc);
 
     pc.ontrack = (event) => {
-      if (remoteStreamRef.current) {
+      console.log("🎥 [WebRTC] ontrack recebido:", event.track.kind, event.streams);
+
+      let stream: MediaStream;
+      if (event.streams && event.streams[0]) {
+        stream = event.streams[0];
+      } else {
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
+        }
         if (!remoteStreamRef.current.getTracks().some((t) => t.id === event.track.id)) {
           remoteStreamRef.current.addTrack(event.track);
         }
+        stream = remoteStreamRef.current;
       }
-      if (remoteVideoRef.current && remoteStreamRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        remoteVideoRef.current.play().catch(() => {});
+
+      remoteStreamRef.current = stream;
+
+      if (event.track.kind === "video") {
+        setRemoteHasVideo(true);
+        event.track.onmute = () => setRemoteHasVideo(false);
+        event.track.onunmute = () => {
+          setRemoteHasVideo(true);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
+          }
+        };
+        event.track.onended = () => setRemoteHasVideo(false);
       }
+
+      if (event.track.kind === "audio") {
+        event.track.onunmute = () => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
+          }
+        };
+      }
+
+      if (remoteVideoRef.current) {
+        if (remoteVideoRef.current.srcObject !== stream) {
+          remoteVideoRef.current.srcObject = stream;
+        }
+        remoteVideoRef.current.muted = false;
+        remoteVideoRef.current.volume = 1.0;
+
+        const playPromise = remoteVideoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => setNeedsAudioUnlock(false))
+            .catch((err) => {
+              console.warn("⚠️ Autoplay bloqueado pelo navegador:", err);
+              setNeedsAudioUnlock(true);
+            });
+        }
+      }
+
       setCallStatus("connected");
     };
 
@@ -297,10 +356,24 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     };
 
     pc.oniceconnectionstatechange = () => {
+      console.log("ICE Connection State:", pc.iceConnectionState);
       if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
         setCallStatus("waiting");
       } else if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
         setCallStatus("connected");
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
+        }
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log("Peer Connection State:", pc.connectionState);
+      if (pc.connectionState === "connected") {
+        setCallStatus("connected");
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
+        }
       }
     };
 
@@ -310,6 +383,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   const createAndSendOffer = async () => {
     try {
       const pc = getOrCreatePeerConnection();
+      attachLocalTracks(pc);
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: true,
@@ -326,19 +400,24 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         );
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao criar/enviar offer:", err);
     }
   };
 
   const handleRemoteOffer = async (offer: RTCSessionDescriptionInit) => {
     try {
       const pc = getOrCreatePeerConnection();
+      attachLocalTracks(pc);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
       while (iceCandidatesQueueRef.current.length > 0) {
         const candidate = iceCandidatesQueueRef.current.shift();
         if (candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.warn("Erro ao aplicar candidato ICE:", e);
+          }
         }
       }
 
@@ -355,7 +434,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         );
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao tratar offer remoto:", err);
     }
   };
 
@@ -367,24 +446,28 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         while (iceCandidatesQueueRef.current.length > 0) {
           const candidate = iceCandidatesQueueRef.current.shift();
           if (candidate) {
-            await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+            try {
+              await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+              console.warn("Erro ao aplicar candidato ICE no answer:", e);
+            }
           }
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao tratar answer remoto:", err);
     }
   };
 
   const handleRemoteCandidate = async (candidate: RTCIceCandidateInit) => {
     try {
-      if (pcRef.current && pcRef.current.remoteDescription) {
+      if (pcRef.current && pcRef.current.remoteDescription && pcRef.current.remoteDescription.type) {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       } else {
         iceCandidatesQueueRef.current.push(candidate);
       }
     } catch (err) {
-      console.error(err);
+      console.warn("Erro ao tratar candidato remoto:", err);
     }
   };
 
@@ -500,6 +583,11 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         backgroundColor: "#0d1117",
         border: "3px solid var(--aa-green, #28a745)",
       }}
+      onClick={() => {
+        if (remoteVideoRef.current && remoteVideoRef.current.paused) {
+          remoteVideoRef.current.play().then(() => setNeedsAudioUnlock(false)).catch(() => {});
+        }
+      }}
     >
       {/* Barra de Status Superior */}
       <div
@@ -541,23 +629,80 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         </span>
       </div>
 
-      {/* Vídeo Remoto (Tela Inteira) */}
+      {/* Vídeo Remoto (Tela Inteira) - Sempre ativo no DOM para manter o decodificador ligado */}
       <video
         ref={remoteVideoRef}
         autoPlay
         playsInline
-        className="w-100 h-100 object-fit-cover"
+        className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
         style={{
-          display: callStatus === "connected" ? "block" : "none",
-          backgroundColor: "#000",
+          backgroundColor: "#0d1117",
+          zIndex: 1,
         }}
       />
+
+      {/* Indicador caso o participante remoto esteja com a câmera desligada ou somente áudio */}
+      {callStatus === "connected" && !remoteHasVideo && (
+        <div
+          className="position-absolute top-50 start-50 translate-middle text-center text-white"
+          style={{ zIndex: 6 }}
+        >
+          <div
+            className="rounded-circle bg-secondary bg-opacity-50 d-inline-flex align-items-center justify-content-center mb-3 shadow"
+            style={{ width: "90px", height: "90px" }}
+          >
+            <i className="bi bi-person-fill display-4 text-light"></i>
+          </div>
+          <h5 className="fw-bold mb-1">
+            {userType === "MEDICO" ? "Paciente Conectado" : "Médico Conectado"}
+          </h5>
+          <span className="badge bg-success bg-opacity-75 px-3 py-2">
+            <i className="bi bi-mic-fill me-1"></i> Transmissão de Áudio Ativa
+          </span>
+        </div>
+      )}
+
+      {/* Banner de desbloqueio de Áudio/Vídeo caso o navegador bloqueie autoplay */}
+      {needsAudioUnlock && callStatus === "connected" && (
+        <div
+          className="position-absolute top-50 start-50 translate-middle text-center p-4 rounded-4 shadow-lg"
+          style={{
+            zIndex: 30,
+            backgroundColor: "rgba(15, 23, 42, 0.95)",
+            border: "2px solid #ffc107",
+            maxWidth: "360px",
+          }}
+        >
+          <i className="bi bi-volume-up-fill text-warning fs-1 mb-2 d-block"></i>
+          <h6 className="text-white fw-bold mb-1">Áudio ou Vídeo Bloqueado</h6>
+          <p className="text-light opacity-75 small mb-3">
+            O navegador pausou a mídia para evitar reprodução automática. Clique para liberar som e imagem.
+          </p>
+          <button
+            type="button"
+            className="btn btn-warning fw-bold px-4 py-2 rounded-pill shadow"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (remoteVideoRef.current) {
+                remoteVideoRef.current.muted = false;
+                remoteVideoRef.current.volume = 1.0;
+                remoteVideoRef.current
+                  .play()
+                  .then(() => setNeedsAudioUnlock(false))
+                  .catch(console.error);
+              }
+            }}
+          >
+            <i className="bi bi-play-circle-fill me-1"></i> Ativar Transmissão Agora
+          </button>
+        </div>
+      )}
 
       {/* Overlay de Espera / Conectando / Erro */}
       {callStatus !== "connected" && (
         <div
-          className="text-center text-white px-4 py-5"
-          style={{ zIndex: 5 }}
+          className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center text-white px-4"
+          style={{ zIndex: 10, backgroundColor: "#0d1117" }}
         >
           {callStatus === "waiting" && (
             <>
@@ -595,10 +740,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
               <button
                 type="button"
                 className="btn btn-sm btn-outline-danger bg-white fw-bold px-4 py-2 rounded-pill shadow-sm"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   reconnectAttemptsRef.current = 0;
                   setCallStatus("connecting");
-                  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
                   const wsUrl = (import.meta as any).env?.VITE_WS_URL || "wss://active-age-backend.onrender.com/ws/video";
                   try {
                     const ws = new WebSocket(wsUrl);
@@ -608,7 +753,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                       setCallStatus("waiting");
                       ws.send(JSON.stringify({ type: "join", roomId, userId, userName, userType }));
                     };
-                  } catch (e) {}
+                  } catch (err) {}
                 }}
               >
                 <i className="bi bi-arrow-clockwise me-1"></i> Tentar Reconectar Agora
@@ -677,7 +822,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             micMuted ? "btn-danger" : "btn-dark border border-secondary text-light"
           }`}
           style={{ width: "42px", height: "42px" }}
-          onClick={toggleMic}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMic();
+          }}
           title={micMuted ? "Ativar Microfone" : "Silenciar Microfone"}
         >
           <i className={`bi ${micMuted ? "bi-mic-mute-fill" : "bi-mic-fill"} fs-6`}></i>
@@ -689,7 +837,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             videoOff ? "btn-danger" : "btn-dark border border-secondary text-light"
           }`}
           style={{ width: "42px", height: "42px" }}
-          onClick={toggleVideo}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleVideo();
+          }}
           title={videoOff ? "Ligar Câmera" : "Desligar Câmera"}
         >
           <i
@@ -705,7 +856,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             isScreenSharing ? "btn-primary" : "btn-dark border border-secondary text-light"
           }`}
           style={{ width: "42px", height: "42px" }}
-          onClick={toggleScreenShare}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleScreenShare();
+          }}
           title={isScreenSharing ? "Parar Compartilhamento" : "Compartilhar Tela"}
         >
           <i className="bi bi-display fs-6"></i>
@@ -717,7 +871,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
           type="button"
           className="btn btn-danger btn-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm"
           style={{ width: "42px", height: "42px" }}
-          onClick={onLeave}
+          onClick={(e) => {
+            e.stopPropagation();
+            onLeave();
+          }}
           title="Sair da Consulta"
         >
           <i className="bi bi-telephone-x-fill fs-6"></i>
