@@ -437,7 +437,12 @@ export function ModalPagamentoMercadoPago({
 
       if (initPoint) {
         setCheckoutUrl(initPoint);
-        setIsIframeCarregando(true);
+        try {
+          window.open(initPoint, "_blank");
+        } catch (e) {
+          console.warn("Navegador bloqueou popup, usuário usará o botão no modal.");
+        }
+        setIsIframeCarregando(false);
         setEtapa("CHECKOUT_EMBARCADO");
         setIsProcessando(false);
       } else {
@@ -990,9 +995,9 @@ export function ModalPagamentoMercadoPago({
                 </div>
               </div>
             ) : etapa === "CHECKOUT_EMBARCADO" ? (
-              <div className="py-1">
+              <div className="py-2 text-center">
                 {/* BARRA SUPERIOR DE INFORMAÇÕES E CONTROLES */}
-                <div className="d-flex justify-content-between align-items-center mb-3 bg-white p-2 px-3 rounded-3 border shadow-sm">
+                <div className="d-flex justify-content-between align-items-center mb-4 bg-white p-2 px-3 rounded-3 border shadow-sm">
                   <div className="d-flex align-items-center gap-2">
                     <span className="badge bg-primary text-white px-2 py-1 small fw-semibold">
                       <i className="bi bi-wallet2 me-1"></i> Mercado Pago / Mercado Livre
@@ -1005,63 +1010,103 @@ export function ModalPagamentoMercadoPago({
                     </span>
                   </div>
 
-                  <div className="d-flex align-items-center gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary rounded-pill"
-                      onClick={() => setEtapa("FORMULARIO")}
-                      disabled={isProcessando}
-                    >
-                      <i className="bi bi-arrow-left me-1"></i> Voltar às opções
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary rounded-circle"
-                      title="Recarregar tela de pagamento"
-                      onClick={() => {
-                        setIsIframeCarregando(true);
-                        const iframe = document.getElementById(
-                          "mpCheckoutIframe"
-                        ) as HTMLIFrameElement;
-                        if (iframe) iframe.src = checkoutUrl;
-                      }}
-                    >
-                      <i className="bi bi-arrow-clockwise"></i>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary rounded-pill"
+                    onClick={() => setEtapa("FORMULARIO")}
+                    disabled={isProcessando}
+                  >
+                    <i className="bi bi-arrow-left me-1"></i> Voltar às opções
+                  </button>
                 </div>
 
-                {/* IFRAME EMBARCADO DO MERCADO PAGO */}
+                {/* CARD CENTRAL DE PAGAMENTO MERCADO PAGO */}
                 <div
-                  className="position-relative w-100 rounded-3 overflow-hidden shadow-sm border bg-white"
-                  style={{ height: "680px" }}
+                  className="bg-white p-4 p-md-5 rounded-4 border shadow-sm mx-auto text-center"
+                  style={{ maxWidth: "580px" }}
                 >
-                  {isIframeCarregando && (
-                    <div className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-white z-2">
-                      <div
-                        className="spinner-border text-primary mb-3"
-                        style={{ width: "3rem", height: "3rem" }}
-                        role="status"
-                      >
-                        <span className="visually-hidden">Carregando...</span>
-                      </div>
-                      <h6 className="fw-bold text-dark mb-1">
-                        Carregando Mercado Pago / Mercado Livre...
-                      </h6>
-                      <small className="text-muted">
-                        Preparando o ambiente seguro de pagamento
-                      </small>
-                    </div>
-                  )}
+                  <div
+                    className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle shadow-sm"
+                    style={{
+                      width: "80px",
+                      height: "80px",
+                      backgroundColor: "#e3f2fd",
+                      color: "#009ee3",
+                      fontSize: "2.8rem",
+                    }}
+                  >
+                    <i className="bi bi-shield-check"></i>
+                  </div>
 
-                  <iframe
-                    id="mpCheckoutIframe"
-                    src={checkoutUrl}
-                    title="Mercado Pago Checkout"
-                    className="w-100 h-100 border-0"
-                    allow="payment *"
-                    onLoad={() => setIsIframeCarregando(false)}
-                  />
+                  <h4 className="fw-bold text-dark mb-2">
+                    Ambiente Oficial Mercado Pago
+                  </h4>
+                  <p className="text-muted mb-4 fs-6" style={{ lineHeight: "1.5" }}>
+                    Por segurança bancária, o Mercado Pago processa cartões de crédito e débito diretamente em seu servidor seguro protegido.
+                  </p>
+
+                  <div className="p-3 mb-4 bg-light rounded-3 border text-start">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <span className="text-muted small">Serviço:</span>
+                      <strong className="text-dark small">{plano.nome}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <span className="text-muted small">Valor a Pagar:</span>
+                      <strong className="text-success fs-5">
+                        R$ {Number(plano.valor || 0).toFixed(2).replace(".", ",")}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* BOTÕES DE AÇÃO */}
+                  <div className="d-grid gap-2 mb-3">
+                    <a
+                      href={checkoutUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-lg py-3 fw-bold shadow-sm rounded-pill text-white d-flex align-items-center justify-content-center gap-2"
+                      style={{ backgroundColor: "#009ee3", borderColor: "#008ecb" }}
+                    >
+                      <i className="bi bi-box-arrow-up-right fs-5"></i>
+                      Abrir Tela de Pagamento do Mercado Pago
+                    </a>
+
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm py-2 rounded-pill fw-semibold"
+                      onClick={() => (window.location.href = checkoutUrl)}
+                    >
+                      <i className="bi bi-arrow-right-circle me-1"></i>
+                      Pagar nesta mesma janela (Redirecionar)
+                    </button>
+                  </div>
+
+                  <div className="my-3 d-flex align-items-center justify-content-center gap-2 text-muted small">
+                    <span
+                      className="spinner-grow spinner-grow-sm text-primary"
+                      role="status"
+                    ></span>
+                    <span>Aguardando conclusão do pagamento no Mercado Pago...</span>
+                  </div>
+
+                  <hr className="my-3" />
+
+                  <button
+                    className="btn btn-success fw-bold px-4 py-2 rounded-pill shadow-sm w-100"
+                    onClick={handleValidarConfirmacaoManual}
+                    disabled={isProcessando}
+                  >
+                    {isProcessando ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-1"></span>
+                        Verificando com Mercado Pago...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-check-circle me-1"></i> Já Concluí o Pagamento no Mercado Pago
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             ) : (
