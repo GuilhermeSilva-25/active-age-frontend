@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
-import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
+import { VideoCall } from "../components/VideoCall";
 
 interface Agendamento {
   id: string;
@@ -50,14 +50,6 @@ export function SalaTeleconsulta() {
   const [atestadoCid, setAtestadoCid] = useState("");
 
   const [isSaving, setIsSaving] = useState(false);
-
-  const zpRef = useRef<any>(null);
-
-  useEffect(() => {
-    return () => {
-      encerrarChamadaDeVez();
-    };
-  }, []);
 
   useEffect(() => {
     const userStr = localStorage.getItem("activeAgeUser");
@@ -144,14 +136,7 @@ export function SalaTeleconsulta() {
   };
 
   const encerrarChamadaDeVez = () => {
-    if (zpRef.current) {
-      try {
-        zpRef.current.destroy();
-      } catch (error) {
-        console.error("Erro ao destruir ZegoCloud:", error);
-      }
-      zpRef.current = null;
-    }
+    // Chamada nativa WebRTC encerra automaticamente ao desmontar o componente
   };
 
   const salvarAbaAtual = async (dados: any, msgSucesso: string) => {
@@ -267,39 +252,6 @@ export function SalaTeleconsulta() {
     });
   };
 
-  const myMeeting = (element: HTMLDivElement | null) => {
-    if (!element || !user || !agendamentoId || zpRef.current) return;
-
-    const appID = 1711589286;
-    const serverSecret = "2b4c79eef006fac989218bd23460ba6c";
-
-    const roomID = agendamentoId;
-
-    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-      appID,
-      serverSecret,
-      roomID,
-      String(user.id),
-      String(user.nome),
-    );
-
-    zpRef.current = ZegoUIKitPrebuilt.create(kitToken);
-
-    zpRef.current.joinRoom({
-      container: element,
-      scenario: {
-        mode: ZegoUIKitPrebuilt.OneONoneCall,
-      },
-      layout: "Grid",
-      showPreJoinView: false,
-      turnOnMicrophoneWhenJoining: true,
-      turnOnCameraWhenJoining: true,
-      showLeaveRoomConfirmDialog: false,
-      onLeaveRoom: () => {
-        window.location.href = "/dashboard";
-      },
-    });
-  };
 
   if (!agendamento)
     return (
@@ -327,14 +279,17 @@ export function SalaTeleconsulta() {
                 <strong>#{agendamento.id.substring(0, 8).toUpperCase()}</strong>
               </p>
 
-              <div
-                ref={myMeeting}
-                className="w-100 rounded-4 shadow-inner overflow-hidden mb-4"
-                style={{
-                  height: "450px",
-                  border: "4px solid var(--aa-green)",
-                }}
-              ></div>
+              <div className="w-100 mb-4">
+                {user && agendamentoId && (
+                  <VideoCall
+                    roomId={agendamentoId}
+                    userId={String(user.id)}
+                    userName={user.nome || "Usuário"}
+                    userType={user.tipo}
+                    onLeave={sairDaSala}
+                  />
+                )}
+              </div>
 
               <div className="mb-4 p-3 bg-light rounded border text-start shadow-sm w-100">
                 {user?.tipo === "MEDICO" ? (
