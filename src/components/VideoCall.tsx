@@ -10,22 +10,34 @@ interface VideoCallProps {
 
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun3.l.google.com:19302" },
-    { urls: "stun:stun4.l.google.com:19302" },
-    { urls: "stun:stun.cloudflare.com:3478" },
-    { urls: "stun:stun.services.mozilla.com" },
-    { urls: "stun:stun.nextcloud.com:443" },
     {
-      urls: [
-        "turn:staticauth.openrelay.metered.ca:80",
-        "turn:staticauth.openrelay.metered.ca:443",
-        "turn:staticauth.openrelay.metered.ca:443?transport=tcp",
-      ],
-      username: "openrelayproject",
-      credential: "openrelayprojectsecret",
+      urls: "stun:stun.relay.metered.ca:80",
+    },
+    {
+      urls: "stun:stun.l.google.com:19302",
+    },
+    {
+      urls: "stun:stun1.l.google.com:19302",
+    },
+    {
+      urls: "turn:br.relay.metered.ca:80",
+      username: "6c34572d93f85439b12aed90",
+      credential: "t599XYLCjJoKRrjG",
+    },
+    {
+      urls: "turn:br.relay.metered.ca:80?transport=tcp",
+      username: "6c34572d93f85439b12aed90",
+      credential: "t599XYLCjJoKRrjG",
+    },
+    {
+      urls: "turn:br.relay.metered.ca:443",
+      username: "6c34572d93f85439b12aed90",
+      credential: "t599XYLCjJoKRrjG",
+    },
+    {
+      urls: "turns:br.relay.metered.ca:443?transport=tcp",
+      username: "6c34572d93f85439b12aed90",
+      credential: "t599XYLCjJoKRrjG",
     },
   ],
 };
