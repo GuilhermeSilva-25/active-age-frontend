@@ -150,12 +150,18 @@ export function Dashboard() {
             const endpointMarcar = `https://active-age-backend.onrender.com/api/agendamentos/marcar/${itemId}/paciente/${usuarioLogado.id}`;
             const endpointConfirmar = `https://active-age-backend.onrender.com/api/agendamentos/${itemId}/confirmar-pagamento`;
 
-            fetch(endpointMarcar, { method: "PUT" })
+            fetch(endpointMarcar, { 
+              method: "PUT",
+              headers: { "X-Ignore-Auth-Redirect": "true" }
+            })
               .catch(() => null)
               .finally(() => {
                 fetch(endpointConfirmar, {
                   method: "PUT",
-                  headers: { "Content-Type": "application/json" },
+                  headers: { 
+                    "Content-Type": "application/json",
+                    "X-Ignore-Auth-Redirect": "true"
+                  },
                   body: JSON.stringify({
                     transacaoId: mpPaymentId,
                     metodo: "Mercado Pago",
