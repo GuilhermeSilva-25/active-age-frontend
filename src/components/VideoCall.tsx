@@ -15,24 +15,19 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: "stun:stun2.l.google.com:19302" },
     { urls: "stun:stun3.l.google.com:19302" },
     { urls: "stun:stun4.l.google.com:19302" },
-    { urls: "stun:stun.relay.metered.ca:80" },
+    { urls: "stun:stun.cloudflare.com:3478" },
+    { urls: "stun:stun.services.mozilla.com" },
+    { urls: "stun:stun.nextcloud.com:443" },
     {
-      urls: "turn:standard.relay.metered.ca:80",
+      urls: [
+        "turn:staticauth.openrelay.metered.ca:80",
+        "turn:staticauth.openrelay.metered.ca:443",
+        "turn:staticauth.openrelay.metered.ca:443?transport=tcp",
+      ],
       username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:443",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:443?transport=tcp",
-      username: "openrelayproject",
-      credential: "openrelayproject",
+      credential: "openrelayprojectsecret",
     },
   ],
-  iceCandidatePoolSize: 10,
 };
 
 export const VideoCall: React.FC<VideoCallProps> = ({
@@ -59,6 +54,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   const [callStatus, setCallStatus] = useState<
     "connecting" | "waiting" | "connected" | "error"
   >("connecting");
+  const [hasRemoteMedia, setHasRemoteMedia] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [callDuration, setCallDuration] = useState(0);
   const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
@@ -66,7 +62,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
   useEffect(() => {
     let timer: any = null;
-    if (callStatus === "connected") {
+    if (callStatus === "connected" || hasRemoteMedia) {
       timer = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
@@ -76,7 +72,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [callStatus]);
+  }, [callStatus, hasRemoteMedia]);
 
   useEffect(() => {
     if (callStatus === "connected" && remoteVideoRef.current) {
@@ -178,8 +174,11 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             }
 
             if (data.type === "joined") {
-              setCallStatus("waiting");
+              if (!hasRemoteMedia && !remoteStreamRef.current) {
+                setCallStatus("waiting");
+              }
             } else if (data.type === "user-joined") {
+              console.log("👤 [WebRTC] Outro participante ingressou. Enviando oferta SDP...");
               await createAndSendOffer();
             } else if (data.type === "offer") {
               await handleRemoteOffer(data.offer);
@@ -190,13 +189,17 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                 await handleRemoteCandidate(data.candidate);
               }
             } else if (data.type === "user-left") {
+              console.log("👋 [WebRTC] Participante saiu da sala.");
+              setHasRemoteMedia(false);
               setCallStatus("waiting");
               if (remoteVideoRef.current) {
                 remoteVideoRef.current.srcObject = null;
               }
               remoteStreamRef.current = null;
               if (pcRef.current) {
-                pcRef.current.close();
+                try {
+                  pcRef.current.close();
+                } catch (e) {}
                 pcRef.current = null;
               }
             }
@@ -301,12 +304,15 @@ export const VideoCall: React.FC<VideoCallProps> = ({
       }
 
       remoteStreamRef.current = stream;
+      setHasRemoteMedia(true);
+      setCallStatus("connected");
 
       if (event.track.kind === "video") {
         setRemoteHasVideo(true);
         event.track.onmute = () => setRemoteHasVideo(false);
         event.track.onunmute = () => {
           setRemoteHasVideo(true);
+          setHasRemoteMedia(true);
           if (remoteVideoRef.current) {
             remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
           }
@@ -316,6 +322,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
       if (event.track.kind === "audio") {
         event.track.onunmute = () => {
+          setHasRemoteMedia(true);
           if (remoteVideoRef.current) {
             remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
           }
@@ -339,8 +346,6 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             });
         }
       }
-
-      setCallStatus("connected");
     };
 
     pc.onicecandidate = (event) => {
@@ -357,14 +362,23 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
     pc.oniceconnectionstatechange = () => {
       console.log("ICE Connection State:", pc.iceConnectionState);
-      if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
-        setCallStatus("waiting");
-      } else if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
         setCallStatus("connected");
         if (remoteVideoRef.current) {
           remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
         }
+      } else if (pc.iceConnectionState === "failed") {
+        console.warn("⚠️ ICE Connection State FAILED. Tentando restartIce()...");
+        try {
+          if (typeof (pc as any).restartIce === "function") {
+            (pc as any).restartIce();
+            createAndSendOffer();
+          }
+        } catch (e) {
+          console.error("Erro no restartIce:", e);
+        }
       }
+      // NOTA: Estados transitórios como 'disconnected' ou 'checking' NÃO expulsam para 'waiting'!
     };
 
     pc.onconnectionstatechange = () => {
@@ -374,6 +388,11 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         if (remoteVideoRef.current) {
           remoteVideoRef.current.play().catch(() => setNeedsAudioUnlock(true));
         }
+      } else if (pc.connectionState === "failed") {
+        console.warn("⚠️ Peer Connection FAILED. Tentando restabelecer oferta...");
+        try {
+          createAndSendOffer();
+        } catch (e) {}
       }
     };
 
@@ -699,7 +718,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
       )}
 
       {/* Overlay de Espera / Conectando / Erro */}
-      {callStatus !== "connected" && (
+      {callStatus !== "connected" && !hasRemoteMedia && (
         <div
           className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center text-white px-4"
           style={{ zIndex: 10, backgroundColor: "#0d1117" }}
