@@ -128,17 +128,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       
-      // Suporte flexível a servidor local (porta 3001 ou 8080) e produção (Render)
-      let wsUrl = (import.meta as any).env?.VITE_WS_URL;
-      if (!wsUrl) {
-        if (isLocalhost) {
-          wsUrl = reconnectAttemptsRef.current % 2 === 0
-            ? "ws://localhost:3001"
-            : "ws://localhost:8080/ws/video";
-        } else {
-          wsUrl = `${protocol}//active-age-backend.onrender.com/ws/video`;
-        }
-      }
+      // Conecta ao servidor de sinalização oficial na nuvem ou VITE_WS_URL
+      const wsUrl =
+        (import.meta as any).env?.VITE_WS_URL ||
+        "wss://active-age-backend.onrender.com/ws/video";
 
       try {
         const ws = new WebSocket(wsUrl);
@@ -148,7 +141,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: "ping", roomId }));
           }
-        }, 20000);
+        }, 15000);
 
         ws.onopen = () => {
           reconnectAttemptsRef.current = 0;
@@ -176,7 +169,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             }
 
             if (data.type === "joined") {
-              // Entrou na sala
+              setCallStatus("waiting");
             } else if (data.type === "user-joined") {
               await createAndSendOffer();
             } else if (data.type === "offer") {
@@ -204,16 +197,17 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         };
 
         ws.onerror = () => {
-          if (reconnectAttemptsRef.current < 5 && isMounted) {
+          if (reconnectAttemptsRef.current < 12 && isMounted) {
             reconnectAttemptsRef.current += 1;
             setCallStatus("connecting");
-            setErrorMessage(`Reconectando sinalização... (tentativa ${reconnectAttemptsRef.current}/5)`);
-            reconnectTimeoutRef.current = setTimeout(connectWebSocket, 2500);
+            setErrorMessage(
+              `Conectando ao servidor de teleconsulta... (tentativa ${reconnectAttemptsRef.current}/12)`
+            );
+            reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
           } else {
-            const errorDetail = isLocalhost
-              ? "Servidor de sinalização de vídeo não encontrado (inicie a API com node server.js ou backend na porta 8080)."
-              : "Não foi possível conectar ao servidor de sinalização (" + wsUrl + ").";
-            setErrorMessage(errorDetail);
+            setErrorMessage(
+              "Não foi possível conectar ao servidor de sinalização (" + wsUrl + "). Clique em 'Tentar Novamente' abaixo."
+            );
             setCallStatus("error");
           }
         };
@@ -230,7 +224,9 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     const initCall = async () => {
       try {
         setCallStatus("connecting");
-        setErrorMessage("");
+        setErrorMessage("Iniciando dispositivos e conectando à sala...");
+        // Acorda o backend do Render caso esteja em modo de hibernação
+        fetch("https://active-age-backend.onrender.com/api/usuarios", { method: "HEAD" }).catch(() => null);
         await setupMediaStream();
         connectWebSocket();
       } catch (err: any) {
@@ -593,9 +589,30 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             <div className="alert alert-danger shadow-sm mb-0">
               <i className="bi bi-exclamation-octagon-fill fs-3 mb-2 d-block"></i>
               <h6 className="fw-bold">Problema na Conexão</h6>
-              <p className="small mb-0">
+              <p className="small mb-3">
                 {errorMessage || "Verifique as permissões de câmera e microfone."}
               </p>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger bg-white fw-bold px-4 py-2 rounded-pill shadow-sm"
+                onClick={() => {
+                  reconnectAttemptsRef.current = 0;
+                  setCallStatus("connecting");
+                  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+                  const wsUrl = (import.meta as any).env?.VITE_WS_URL || "wss://active-age-backend.onrender.com/ws/video";
+                  try {
+                    const ws = new WebSocket(wsUrl);
+                    wsRef.current = ws;
+                    ws.onopen = () => {
+                      reconnectAttemptsRef.current = 0;
+                      setCallStatus("waiting");
+                      ws.send(JSON.stringify({ type: "join", roomId, userId, userName, userType }));
+                    };
+                  } catch (e) {}
+                }}
+              >
+                <i className="bi bi-arrow-clockwise me-1"></i> Tentar Reconectar Agora
+              </button>
             </div>
           )}
         </div>
