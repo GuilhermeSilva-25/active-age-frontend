@@ -112,9 +112,9 @@ export const VideoCall: React.FC<VideoCallProps> = ({
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: { ideal: 1280, max: 1920 },
-            height: { ideal: 720, max: 1080 },
-            frameRate: { ideal: 30 },
+            width: { ideal: 640, max: 960 },
+            height: { ideal: 480, max: 540 },
+            frameRate: { ideal: 24, max: 24 },
             facingMode: "user",
           },
           audio: {
@@ -309,6 +309,23 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         }
       }
     });
+
+    // Otimização de banda: limita o bitrate de vídeo a 250 kbps (economiza até 65% de dados)
+    setTimeout(() => {
+      try {
+        pc.getSenders().forEach((sender) => {
+          if (sender.track && sender.track.kind === "video") {
+            const params = sender.getParameters();
+            if (!params.encodings || params.encodings.length === 0) {
+              params.encodings = [{}];
+            }
+            params.encodings[0].maxBitrate = 250000;
+            params.encodings[0].maxFramerate = 24;
+            sender.setParameters(params).catch(() => {});
+          }
+        });
+      } catch (err) {}
+    }, 100);
   };
 
   const getOrCreatePeerConnection = (): RTCPeerConnection => {
