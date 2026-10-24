@@ -162,7 +162,9 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
         ws.onopen = () => {
           reconnectAttemptsRef.current = 0;
-          setCallStatus("waiting");
+          if (!hasRemoteMedia && !remoteStreamRef.current) {
+            setCallStatus("waiting");
+          }
           ws.send(
             JSON.stringify({
               type: "join",
@@ -180,8 +182,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
             if (data.type === "pong") return;
 
             if (data.type === "error") {
-              setErrorMessage(data.message || "Erro de conexão na sala.");
-              setCallStatus("error");
+              if (!hasRemoteMedia) {
+                setErrorMessage(data.message || "Erro de conexão na sala.");
+                setCallStatus("error");
+              }
               return;
             }
 
@@ -201,7 +205,19 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                 await handleRemoteCandidate(data.candidate);
               }
             } else if (data.type === "user-left") {
-              console.log("👋 [WebRTC] Participante saiu da sala.");
+              console.log("👋 [WebRTC] Notificação user-left recebida.");
+              // Se os tracks de áudio/vídeo ainda estão ativos e transmitindo via TURN/P2P, NÃO derruba a chamada!
+              const isMediaStillAlive =
+                remoteStreamRef.current &&
+                remoteStreamRef.current
+                  .getTracks()
+                  .some((t) => t.readyState === "live" && !t.muted);
+
+              if (isMediaStillAlive) {
+                console.log("🛡️ Transmissão de vídeo continua ativa. Ignorando user-left transitório.");
+                return;
+              }
+
               setHasRemoteMedia(false);
               setCallStatus("waiting");
               if (remoteVideoRef.current) {
@@ -221,14 +237,18 @@ export const VideoCall: React.FC<VideoCallProps> = ({
         };
 
         ws.onerror = () => {
+          console.warn("⚠️ WebSocket de sinalização oscilou.");
           if (reconnectAttemptsRef.current < 12 && isMounted) {
             reconnectAttemptsRef.current += 1;
-            setCallStatus("connecting");
-            setErrorMessage(
-              `Conectando ao servidor de teleconsulta... (tentativa ${reconnectAttemptsRef.current}/12)`
-            );
+            // Só exibe tela de reconexão se a mídia ainda não estiver rodando
+            if (!hasRemoteMedia && !remoteStreamRef.current) {
+              setCallStatus("connecting");
+              setErrorMessage(
+                `Conectando ao servidor de teleconsulta... (tentativa ${reconnectAttemptsRef.current}/12)`
+              );
+            }
             reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
-          } else {
+          } else if (!hasRemoteMedia) {
             setErrorMessage(
               "Não foi possível conectar ao servidor de sinalização (" + wsUrl + "). Clique em 'Tentar Novamente' abaixo."
             );
@@ -238,6 +258,9 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
         ws.onclose = () => {
           clearInterval(pingInterval);
+          if (isMounted && reconnectAttemptsRef.current < 12 && !hasRemoteMedia) {
+            reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
+          }
         };
       } catch (e: any) {
         setErrorMessage("Erro ao iniciar WebSocket: " + e.message);
