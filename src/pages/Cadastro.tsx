@@ -43,6 +43,30 @@ const LISTA_ESPECIALIDADES = [
   "Podologia",
 ];
 
+function validarCPF(cpf: string): boolean {
+  const cleanCpf = cpf.replace(/\D/g, "");
+  if (cleanCpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
+
+  let soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(cleanCpf.charAt(i), 10) * (10 - i);
+  }
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cleanCpf.charAt(9), 10)) return false;
+
+  soma = 0;
+  for (let i = 0; i < 10; i++) {
+    soma += parseInt(cleanCpf.charAt(i), 10) * (11 - i);
+  }
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cleanCpf.charAt(10), 10)) return false;
+
+  return true;
+}
+
 export function Cadastro() {
   const navigate = useNavigate();
 
@@ -122,6 +146,15 @@ export function Cadastro() {
         icon: "warning",
         title: "E-mail Inválido",
         text: "Informe um e-mail válido com domínio.",
+      });
+      return;
+    }
+
+    if (tipoUsuario === "PACIENTE" && !validarCPF(cpf)) {
+      Swal.fire({
+        icon: "warning",
+        title: "CPF Inválido",
+        text: "Por favor, informe um CPF válido.",
       });
       return;
     }
